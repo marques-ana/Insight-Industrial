@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Insight Industrial - Monitor Industria 4.0</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div id="logo-container">
+            <img src="../Insight-Industrial/imagens/m.-removebg-preview (2).png" alt="Logomarca Insight Industrial" id="system-logo">
+        </div>
+        <h1 class="system-title">Insight Industrial</h1>
+        <p class="subtitle">Plataforma de Monitoramento e Análise Industria 4.0</p>
+    </header>
+
+    <main>
+        <section id="status-bancadas">
+            <h2>Status Operacional (Bancadas)</h2>
+            <div class="status-grid">
+                <div class="status-box" id="estoque-status">
+                    <h3>📦 Estoque (28 Posições)</h3>
+                    <div id="estoque-posicoes-container" class="posicao-container">
+                        </div>
+                </div>
+
+                <div class="status-box" id="processo-status">
+                    <h3>⚙️ Processo</h3>
+                    <div id="proc-status-display" class="posicao" data-bancada="Processo"></div>
+                </div>
+
+                <div class="status-box" id="montagem-status">
+                    <h3>🛠️ Montagem</h3>
+                    <div id="mont-status-display" class="posicao" data-bancada="Montagem"></div>
+                </div>
+
+                <div class="status-box" id="expedicao-status">
+                    <h3>🚚 Expedição (12 Posições)</h3>
+                    <div id="expedicao-posicoes-container" class="posicao-container">
+                        </div>
+                </div>
+            </div>
+        </section>
+        
+        <hr>
+        
+        <section id="coleta-dados">
+            <h2>Registro de Status e Dados Ambientais</h2>
+            
+            <div class="coleta-container">
+                <div class="form-box">
+                    <h3>Registro de Status/Movimento</h3>
+                    <form id="registro-form">
+                        <label for="area">Área:</label>
+                        <select id="area" required>
+                            <option value="">-- Selecione a Área --</option>
+                            <option value="estoque">Estoque</option>
+                            <option value="processo">Processo</option>
+                            <option value="montagem">Montagem</option>
+                            <option value="expedicao">Expedição</option>
+                        </select>
+
+                        <div id="campos-dinamicos"></div>
+
+                        <button type="submit">Registrar</button>
+                    </form>
+                </div>
+                
+                <div class="ambiental-box">
+                    <h3>Dados Ambientais (Sensores)</h3>
+                    <div id="dados-ambientais">
+                        <p>Temperatura: <span id="temp-display">--</span> °C</p>
+                        <p>Umidade: <span id="umidade-display">--</span> %</p>
+                        <p>Tensão: <span id="tensao-display">--</span> V</p>
+                        <p>Corrente: <span id="corrente-display">--</span> A</p>
+                    </div>
+                    <button onclick="simularLeituraAmbiental()">Simular Leitura</button>
+                </div>
+            </div>
+        </section>
+
+        <hr>
+
+        <section id="rastreamento-pedidos">
+            <h2>🔎 Rastreamento de Pedidos</h2>
+            <div class="rastreamento-inputs">
+                <input type="text" id="input-pedido" placeholder="Buscar por Nº do Pedido (Ex: P1001)">
+                <button onclick="buscarPedido()">Buscar Pedido</button>
+            </div>
+            <div id="resultado-rastreamento">
+                </div>
+            
+            <div id="lista-pedidos-ativos">
+                <h3>Pedidos Ativos</h3>
+                <ul id="lista-pedidos-ul">
+                    </ul>
+            </div>
+        </section>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
