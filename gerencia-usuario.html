@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Insight Industrial - Gerência de Usuário</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body onload="initializeGerenciaUsuarioPage()">
+    
+    <div id="main-container">
+        <header>
+            <div id="logo-container">
+                <img src="../Insight-Industrial/imagens/m.-removebg-preview (2).png" alt="Logomarca Insight Industrial" id="system-logo">
+            </div>
+            <h1 class="system-title">Insight Industrial</h1>
+            <p class="subtitle">Plataforma de Monitoramento e Análise Industria 4.0</p>
+            <div id="user-info">
+                Bem-vindo(a), <span id="display-user-name"></span> (<span id="display-user-type"></span>) | 
+                <a href="bancadas.html">Voltar para Bancadas</a> |
+                <button onclick="handleLogout()">Sair</button>
+            </div>
+        </header>
+
+        <main>
+            <section id="gerencia-usuario-section"> 
+                <h2>🧑‍💻 Gerência de Usuário (Professor) - RF01</h2>
+                
+                <button id="btn-show-create-form" onclick="toggleUserForm('create')" class="add-user-btn">➕ Adicionar Novo Usuário</button>
+
+                <div id="user-form-container" style="display: none;">
+                    </div>
+
+                <h3>Lista de Usuários Cadastrados</h3>
+                <table id="users-table">
+                    <tbody id="users-table-body"></tbody>
+                </table>
+            </section>
+        </main>
+    </div>
+
+    <script src="index.js"></script>
+    <script src="gerencia.js"></script>
+</body>
+</html>

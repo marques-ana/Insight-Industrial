@@ -2,14 +2,14 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Insight Industrial - Monitor Industria 4.0</title>
+    <title>Insight Industrial - Login</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    
+
     <div id="login-container">
         <h2>Acesso à Plataforma</h2>
-        <form id="login-form">
+        <form id="login-form" onsubmit="login(event)">
             <label for="login-email">Email:</label>
             <input type="email" id="login-email" required placeholder="ex: professor@insight.com">
             <label for="login-senha">Senha:</label>
@@ -18,112 +18,7 @@
             <p id="login-erro" class="error-message"></p>
         </form>
     </div>
-
-    <div id="main-container" style="display: none;">
-        <header>
-            <div id="logo-container">
-                <img src="../Insight-Industrial/imagens/m.-removebg-preview (2).png" alt="Logomarca Insight Industrial" id="system-logo">
-            </div>
-            <h1 class="system-title">Insight Industrial</h1>
-            <p class="subtitle">Plataforma de Monitoramento e Análise Industria 4.0</p>
-            <div id="user-info">
-                Bem-vindo(a), <span id="display-user-name"></span> (<span id="display-user-type"></span>) | <button onclick="handleLogout()">Sair</button>
-            </div>
-        </header>
-
-        <main>
-            
-            <section id="gerencia-usuario" style="display: none;">
-                <h2>🧑‍💻 Gerência de Usuário (Professor)</h2>
-                <button onclick="alert('Funcionalidade de Listagem/Criação/Edição de Usuários (RF01) seria implementada aqui.')">Gerenciar Usuários</button>
-                <hr>
-            </section>
-            
-            <section id="criacao-pedido">
-                <h2>➕ Criação de Novo Pedido (RF06)</h2>
-                <form id="form-cria-pedido">
-                    <label for="cor-base">Cor da Base:</label>
-                    <select id="cor-base" required>
-                        <option value="Azul">Azul</option>
-                        <option value="Preto">Preto</option>
-                        <option value="Vermelho">Vermelho</option>
-                    </select>
-
-                    <label>Cores das 3 Paredes:</label>
-                    <input type="color" id="cor-parede-1" value="#ff0000" title="Parede 1">
-                    <input type="color" id="cor-parede-2" value="#00ff00" title="Parede 2">
-                    <input type="color" id="cor-parede-3" value="#0000ff" title="Parede 3">
-                    
-                    <button type="submit">Criar Pedido</button>
-                </form>
-                <hr>
-            </section>
-            
-            <section id="status-bancadas">
-                <h2>Status Operacional (4 Módulos)</h2>
-                <div class="status-grid">
-                    
-                    <div class="status-box" id="estoque-status">
-                        <h3>📦 Estoque (28 Bases)</h3>
-                        <div id="estoque-posicoes-container" class="posicao-container">
-                            </div>
-                    </div>
-
-                    <div class="status-box" id="processo-status">
-                        <h3>⚙️ Processo</h3>
-                        <div id="proc-status-display" class="posicao-info" data-bancada="Processo">Em espera.</div>
-                    </div>
-
-                    <div class="status-box" id="montagem-status">
-                        <h3>🛠️ Montagem</h3>
-                        <div id="mont-status-display" class="posicao-info" data-bancada="Montagem">Em espera.</div>
-                    </div>
-
-                    <div class="status-box" id="expedicao-status">
-                        <h3>🚚 Expedição (12 Espaços)</h3>
-                        <div id="expedicao-posicoes-container" class="posicao-container">
-                             </div>
-                    </div>
-                </div>
-            </section>
-            
-            <hr>
-            
-            <section id="coleta-dados">
-                <h2>Registro de Status e Dados Ambientais</h2>
-                
-                <div class="coleta-container">
-                    <div class="ambiental-box">
-                        <h3>Dados Ambientais (Sensores - RN04)</h3>
-                        <div id="dados-ambientais">
-                            <p>Temperatura: <span id="temp-display">--</span> °C</p>
-                            <p>Umidade: <span id="umidade-display">--</span> %</p>
-                        </div>
-                        <p class="nota-polling">Atualizando a cada 2 segundos (Polling: RF07)</p>
-                    </div>
-                </div>
-            </section>
-
-            <hr>
-
-            <section id="rastreamento-pedidos">
-                <h2>🔎 Rastreamento de Pedidos (RF04, RF05)</h2>
-                <div class="rastreamento-inputs">
-                    <input type="text" id="input-pedido" placeholder="Buscar por Nº do Pedido (Ex: P1001)">
-                    <button onclick="buscarPedido()">Buscar Pedido</button>
-                </div>
-                <div id="resultado-rastreamento" class="rastreio-info">
-                    </div>
-                
-                <div id="lista-pedidos-ativos">
-                    <h3>Pedidos Ativos (Não Iniciado, Aguardando, Em Processo)</h3>
-                    <ul id="lista-pedidos-ul">
-                         </ul>
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <script src="script.js"></script>
+    
+    <script src="index.js"></script>
 </body>
 </html>
