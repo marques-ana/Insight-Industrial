@@ -5,9 +5,7 @@
     <title>Insight Industrial - Gerência de Usuário</title>
     <link rel="stylesheet" href="styles.css">
 </head>
-<body onload="initializeGerenciaUsuarioPage()">
-    
-    <div id="main-container">
+<body> <div id="main-container">
         <header>
             <div id="logo-container">
                 <img src="../Insight-Industrial/imagens/m.-removebg-preview (2).png" alt="Logomarca Insight Industrial" id="system-logo">
@@ -28,11 +26,47 @@
                 <button id="btn-show-create-form" onclick="toggleUserForm('create')" class="add-user-btn">➕ Adicionar Novo Usuário</button>
 
                 <div id="user-form-container" style="display: none;">
-                    </div>
+                    <h2 id="form-title">Cadastrar Novo Usuário</h2>
+                    <form id="form-user-crud">
+                        <input type="hidden" id="user-id" value=""> 
 
+                        <label for="nome">Nome:</label>
+                        <input type="text" id="nome" required>
+
+                        <label for="sobrenome">Sobrenome:</label>
+                        <input type="text" id="sobrenome" required>
+
+                        <label for="dataNascimento">Data de Nascimento:</label>
+                        <input type="date" id="dataNascimento" required>
+
+                        <label for="tipo">Tipo de Usuário:</label>
+                        <select id="tipo" required>
+                            <option value="Professor">Professor</option>
+                            <option value="Aluno">Aluno</option>
+                        </select>
+                        
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" required>
+
+                        <label for="senha">Senha:</label>
+                        <input type="password" id="senha" required>
+
+                        <button type="submit" id="submit-btn">Salvar</button>
+                        <button type="button" class="cancel-btn" onclick="toggleUserForm('hide')">Cancelar</button>
+                    </form>
+                </div>
                 <h3>Lista de Usuários Cadastrados</h3>
                 <table id="users-table">
-                    <tbody id="users-table-body"></tbody>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Tipo</th>
+                            <th>Email</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                        </tbody>
                 </table>
             </section>
         </main>

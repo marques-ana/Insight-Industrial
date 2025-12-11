@@ -282,3 +282,8 @@ button:hover {
     font-weight: bold;
 }
 
+
+.posicao-base.Pronto.Azul { background-color: blue; }
+.posicao-base.Pronto.Preto { background-color: black; }
+.posicao-base.Pronto.Vermelho { background-color: red; }
+

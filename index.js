@@ -1,14 +1,3 @@
-
-// =======================================================================
-// DADOS SIMULADOS E PERSISTÊNCIA
-// =======================================================================
-
-function login(e){
-    e.preventDefault(); 
-    console.log("redirecionando..."); 
-    window.location.href = "bancadas.html";
-}
-    
 const defaultUsers = [
     { 
         id: 1, 
@@ -33,6 +22,7 @@ const defaultUsers = [
 let USERS = JSON.parse(localStorage.getItem('USERS')) || defaultUsers;
 let nextUserId = USERS.length + 1;
 
+// RN06: Cinco status de pedido
 const STATUS = {
     NAO_INICIADO: 'Não iniciado',
     AGUARDANDO_MODULO: 'Aguardando módulo',
@@ -41,15 +31,23 @@ const STATUS = {
     CANCELADO: 'Cancelado',
 };
 
-// Dados simulados de pedidos, estoque e ambiente (mantenha a estrutura original)
-let orders = [
-    { id: 'P1001', base: 'Preto', paredes: ['#ff0000', '#00ff00', '#0000ff'], status: STATUS.EM_PROCESSO, local: 'Processo' },
-    { id: 'P1002', base: 'Azul', paredes: ['#ffffff', '#ffffff', '#ffffff'], status: STATUS.FINALIZADO, local: 'Expedição', posicaoExpedicao: 5 },
-    { id: 'P1003', base: 'Vermelho', paredes: ['#000000', '#000000', '#000000'], status: STATUS.NAO_INICIADO, local: 'Estoque' },
+// Estrutura principal dos pedidos (Persistido)
+let orders = JSON.parse(localStorage.getItem('orders')) || [
+    { id: 'P1001', base: 'Preto', paredes: ['Preto', 'Azul', 'Vermelho'], status: STATUS.EM_PROCESSO, local: 'Processo' },
+    { id: 'P1002', base: 'Azul', paredes: ['Azul', 'Azul', 'Azul'], status: STATUS.FINALIZADO, local: 'Expedição', posicaoExpedicao: 5 },
+    { id: 'P1003', base: 'Vermelho', paredes: ['Vermelho', 'Preto', 'Vermelho'], status: STATUS.NAO_INICIADO, local: 'Estoque' },
 ];
 
-let estoqueData = [ /* ... 28 posições simuladas ... */ ]; // Copie seus dados aqui
-let ambientalData = { temperatura: 25.5, umidade: 60.2 }; // Copie seus dados aqui
+// RN02: 28 bases (Bases de exemplo e posições nulas)
+const defaultEstoque = [
+    'Preto', null, 'Azul', null, null, null, null, null, null, null,
+    null, null, null, null, null, null, null, null, null, null,
+    null, null, null, null, null, null, null, null // Total de 28 posições
+];
+let estoqueData = JSON.parse(localStorage.getItem('estoqueData')) || defaultEstoque;
+
+// RN04: Dados Ambientais (Persistido)
+let ambientalData = JSON.parse(localStorage.getItem('ambientalData')) || { temperatura: 25.5, umidade: 60.2 };
 
 // Variáveis de estado e controle
 let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
@@ -67,7 +65,6 @@ function handleLogin(email, senha) {
     if (user) {
         localStorage.setItem('currentUser', JSON.stringify(user)); 
         localStorage.setItem('USERS', JSON.stringify(USERS));
-        // Redireciona para o dashboard principal
         window.location.href = 'bancadas.html'; 
     } else {
         loginErro.textContent = 'Email ou senha incorretos.';
@@ -82,9 +79,14 @@ function handleLogout() {
     window.location.href = 'index.html'; 
 }
 
-// Função utilitária chamada após qualquer alteração no USERS (usada em gerencia.js)
-function saveUsers() {
-    localStorage.setItem('USERS', JSON.stringify(USERS));
+// Funções utilitárias de persistência
+function saveUsers() { 
+    localStorage.setItem('USERS', JSON.stringify(USERS)); 
+}
+function saveBancadasData() { 
+    localStorage.setItem('orders', JSON.stringify(orders));
+    localStorage.setItem('estoqueData', JSON.stringify(estoqueData));
+    localStorage.setItem('ambientalData', JSON.stringify(ambientalData));
 }
 
 // =======================================================================
@@ -93,9 +95,7 @@ function saveUsers() {
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('login-form');
     
-    // Se estiver na página de login
     if (loginForm) {
-        // Redireciona se já estiver logado
         if (currentUser) {
             window.location.href = 'bancadas.html';
             return;

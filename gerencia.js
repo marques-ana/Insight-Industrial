@@ -1,5 +1,3 @@
-// gerencia.js
-
 // =======================================================================
 // LÓGICA DE INICIALIZAÇÃO DA PÁGINA DE GERÊNCIA DE USUÁRIOS (Professor)
 // =======================================================================
@@ -12,7 +10,6 @@ function initializeGerenciaUsuarioPage() {
         return;
     }
 
-    // Atualiza o cabeçalho
     document.getElementById('display-user-name').textContent = `${currentUser.nome} ${currentUser.sobrenome}`;
     document.getElementById('display-user-type').textContent = currentUser.tipo;
 
@@ -25,12 +22,9 @@ function initializeGerenciaUsuarioPage() {
 
 // =======================================================================
 // LÓGICA DE CRUD (RF01)
-// (Inclua aqui suas funções 'renderUsersTable', 'toggleUserForm', 
-// 'editUser', 'deleteUser', 'handleUserFormSubmit')
 // =======================================================================
 
 function renderUsersTable() {
-    // ... Lógica para listar a tabela de usuários (usando USERS de data.js)
     const tbody = document.getElementById('users-table-body');
     tbody.innerHTML = ''; 
 
@@ -51,7 +45,6 @@ function renderUsersTable() {
 }
 
 function toggleUserForm(mode, userId = null) {
-    // ... Lógica para mostrar/ocultar formulário
     const formContainer = document.getElementById('user-form-container');
     const formTitle = document.getElementById('form-title');
     const submitBtn = document.getElementById('submit-btn');
@@ -61,13 +54,13 @@ function toggleUserForm(mode, userId = null) {
     
     if (mode === 'create') {
         formContainer.style.display = 'block';
-        formTitle.textContent = 'Cadastrar';
+        formTitle.textContent = 'Cadastrar Novo Usuário';
         submitBtn.textContent = 'Salvar Novo Usuário';
         document.getElementById('email').readOnly = false;
         document.getElementById('senha').required = true;
     } else if (mode === 'edit') {
         formContainer.style.display = 'block';
-        formTitle.textContent = 'Editar';
+        formTitle.textContent = 'Editar Usuário';
         submitBtn.textContent = 'Salvar Alterações';
         editUser(userId); 
         document.getElementById('email').readOnly = true;
@@ -78,11 +71,19 @@ function toggleUserForm(mode, userId = null) {
 }
 
 function editUser(userId) {
-    // ... Lógica para preencher o formulário
+    const user = USERS.find(u => u.id === userId);
+    if (user) {
+        document.getElementById('user-id').value = user.id;
+        document.getElementById('nome').value = user.nome;
+        document.getElementById('sobrenome').value = user.sobrenome;
+        document.getElementById('dataNascimento').value = user.dataNascimento;
+        document.getElementById('tipo').value = user.tipo;
+        document.getElementById('email').value = user.email;
+        // Senha não é preenchida por segurança, nem torna-se obrigatória
+    }
 }
 
 function deleteUser(userId) {
-    // ... Lógica de exclusão (chamando saveUsers() para persistir)
     if (currentUser && currentUser.id === userId) {
         alert('Você não pode excluir sua própria conta!');
         return;
@@ -97,16 +98,47 @@ function deleteUser(userId) {
 }
 
 function handleUserFormSubmit(e) {
-    // ... Lógica de Criação/Edição de Usuário (chamando saveUsers() para persistir)
-    // Nota: Lembre-se de usar nextUserId++ para IDs
+    e.preventDefault();
+    const userId = document.getElementById('user-id').value;
+    const nome = document.getElementById('nome').value;
+    const sobrenome = document.getElementById('sobrenome').value;
+    const dataNascimento = document.getElementById('dataNascimento').value;
+    const tipo = document.getElementById('tipo').value;
+    const email = document.getElementById('email').value;
+    const senha = document.getElementById('senha').value;
     
-    // Exemplo do final da função:
-    // ...
-    saveUsers(); // Salva a alteração
+    if (userId) {
+        // EDITAR
+        let user = USERS.find(u => u.id === parseInt(userId));
+        if (user) {
+            user.nome = nome;
+            user.sobrenome = sobrenome;
+            user.dataNascimento = dataNascimento;
+            user.tipo = tipo;
+            user.email = email;
+            if (senha) { 
+                user.senha = senha;
+            }
+            alert('Usuário editado com sucesso.');
+        }
+    } else {
+        // CRIAR NOVO
+        const newUser = {
+            id: nextUserId++,
+            nome,
+            sobrenome,
+            dataNascimento,
+            tipo,
+            email,
+            senha
+        };
+        USERS.push(newUser);
+        alert('Usuário criado com sucesso.');
+    }
+
+    saveUsers(); 
     toggleUserForm('hide');
     renderUsersTable();
 }
 
-
-// Chama a inicialização quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', initializeGerenciaUsuarioPage);

@@ -1,24 +1,16 @@
-// bancadas.js
-
-// Nota: Este arquivo assume que as variáveis globais (orders, STATUS, estoqueData, etc.)
-// e as funções (currentUser, pollingInterval) estão definidas em core.js.
-
 // =======================================================================
 // LÓGICA DE INICIALIZAÇÃO DA PÁGINA DE BANCADAS (Dashboard)
 // =======================================================================
 
 function initializeBancadasPage() {
-    // Garante que o usuário está logado
     if (!currentUser) {
         window.location.href = 'index.html'; 
         return;
     }
 
-    // Atualiza o cabeçalho
     document.getElementById('display-user-name').textContent = `${currentUser.nome} ${currentUser.sobrenome}`;
     document.getElementById('display-user-type').textContent = currentUser.tipo;
 
-    // Professor vê o link de Gerência de Usuário
     const navGerencia = document.getElementById('nav-gerencia');
     if (currentUser.tipo === 'Professor') {
         navGerencia.style.display = 'inline-block';
@@ -43,9 +35,49 @@ function initializeBancadasPage() {
             buscarPedido(document.getElementById('pedido-id-busca').value);
         });
     }
+
+    function handleCancelOrder(orderId) {
+        const order = orders.find(o => o.id.toUpperCase() === orderId.toUpperCase());
+
+        if (!order) {
+            alert(`Erro: Pedido ${orderId} não encontrado.`);
+            return;
+        }
+
+        if (order.status === STATUS.FINALIZADO || order.status === STATUS.CANCELADO) {
+            alert(`Pedido ${orderId} já está ${order.status}. Não pode ser cancelado.`);
+            return;
+        }
+    
+        if (confirm(`Tem certeza que deseja cancelar o Pedido ${orderId}? Esta ação é irreversível.`)) {
+        
+            // 1. Atualiza o status
+            order.status = STATUS.CANCELADO;
+            order.local = 'Cancelado'; 
+
+            // 2. Libera a posição no Estoque se o pedido ainda estava lá (RN02)
+            if (order.local === 'Estoque') {
+                const estoqueIndex = estoqueData.findIndex(p => p === order.base);
+                if (estoqueIndex !== -1) {
+                    estoqueData[estoqueIndex] = null;
+                }
+            }
+        
+            // 3. Salva e atualiza
+            saveBancadasData();
+            atualizarDadosBancada();
+            alert(`Pedido ${orderId} cancelado com sucesso.`);
+        
+            // Oculta o resultado do rastreio ou exibe o novo status
+            document.getElementById('rastreio-resultado').style.display = 'none';
+        
+            // Chama a busca novamente para mostrar o status atualizado
+            buscarPedido(orderId);
+        }
+    }
     
     // Inicia o Polling e renderiza o dashboard
-    startPolling(); // RF07
+    startPolling(); 
     atualizarDadosBancada(); // Renderiza dados iniciais
 }
 
@@ -61,7 +93,6 @@ function handleCreateOrder() {
         document.getElementById('cor-parede-3').value,
     ];
     
-    // Simula a geração do próximo ID
     const newId = 'P' + (1000 + orders.length + 1);
     
     // RN06: Pedido nasce com status 'Não iniciado' e local 'Estoque'
@@ -78,9 +109,9 @@ function handleCreateOrder() {
     if (emptyIndex !== -1) {
         orders.push(newOrder);
         estoqueData[emptyIndex] = corBase;
+        saveBancadasData(); // Salva a alteração
         alert(`Pedido ${newId} criado com sucesso! Status: ${newOrder.status}`);
         
-        // Atualiza a visualização
         atualizarDadosBancada(); 
         document.getElementById('form-cria-pedido').reset();
     } else {
@@ -90,12 +121,11 @@ function handleCreateOrder() {
 
 
 // =======================================================================
-// LÓGICA DE ATUALIZAÇÃO DE DADOS E POLLING (RF07)
+// LÓGICA DE ATUALIZAÇÃO DE DADOS E POLLING (RF07, RNF01)
 // =======================================================================
 
-// Simula a coleta de dados e o avanço dos pedidos
 function simulateFetchData() {
-    // RN04: Simula dados ambientais
+    // RNF01: Simula coleta de dados (Polling)
     ambientalData.temperatura = (20 + Math.random() * 10).toFixed(1); 
     ambientalData.umidade = (50 + Math.random() * 20).toFixed(1);
     
@@ -106,23 +136,43 @@ function simulateFetchData() {
             order.local = 'Processo';
         } else if (order.status === STATUS.AGUARDANDO_MODULO && Math.random() < 0.2) {
             order.status = STATUS.EM_PROCESSO;
+            order.local = 'Processo';
         } else if (order.status === STATUS.EM_PROCESSO && Math.random() < 0.1) {
+            
+            // ----------------------------------------------------
+            // Ação de Finalização do Pedido
+            // ----------------------------------------------------
             order.status = STATUS.FINALIZADO;
             order.local = 'Expedição';
+            
+            // RN02: REMOVE A BASE DO ESTOQUE
+            const estoqueIndex = estoqueData.findIndex(p => p === order.base);
+            if (estoqueIndex !== -1) {
+                estoqueData[estoqueIndex] = null; // Libera o espaço
+            }
         }
     });
 
     // Simula a alocação de pedidos finalizados na Expedição (RN03)
-    const expedicaoOrders = orders.filter(o => o.local === 'Expedição' && typeof o.posicaoExpedicao === 'undefined');
-    expedicaoOrders.forEach(order => {
-        const occupiedPositions = orders.filter(o => o.local === 'Expedição').map(o => o.posicaoExpedicao);
-        for (let i = 1; i <= 12; i++) { // 12 espaços na Expedição
+    // Agora só alocamos se o status já for FINALIZADO e ainda não tiver posição.
+    const expedicaoOrdersToAllocate = orders.filter(o => 
+        o.local === 'Expedição' && 
+        o.status === STATUS.FINALIZADO && 
+        typeof o.posicaoExpedicao === 'undefined'
+    );
+    
+    expedicaoOrdersToAllocate.forEach(order => {
+        const occupiedPositions = orders.filter(o => o.local === 'Expedição' && o.status === STATUS.FINALIZADO).map(o => o.posicaoExpedicao);
+        
+        for (let i = 1; i <= 12; i++) { // 12 espaços na Expedição (RN03)
             if (!occupiedPositions.includes(i)) {
                 order.posicaoExpedicao = i;
                 break;
             }
         }
     });
+    
+    saveBancadasData(); // Persiste a mudança simulada
 }
 
 // Inicia o Polling (RF07)
@@ -137,12 +187,12 @@ function startPolling() {
 // Atualiza o dashboard completo
 async function atualizarDadosBancada() {
     // Filtra pedidos para cada módulo
-    const estoqueOrders = estoqueData;
+    // Note que a expedição só mostra pedidos FINALIZADOS (RN03)
     const expedicaoOrders = orders.filter(o => o.local === 'Expedição' && o.status === STATUS.FINALIZADO);
     const processoOrders = orders.filter(o => o.local === 'Processo' || o.local === 'Montagem');
     
     // RF03: Renderiza bancadas e dados
-    renderBenches(estoqueOrders, expedicaoOrders); 
+    renderBenches(estoqueData, expedicaoOrders); 
     renderProcessModules(processoOrders.filter(o => o.local === 'Processo').length, processoOrders.filter(o => o.local === 'Montagem').length);
     renderEnvironmentalData(ambientalData); // RN04
     
@@ -155,30 +205,42 @@ async function atualizarDadosBancada() {
 // =======================================================================
 
 function renderBenches(estoque, expedicao) {
-    // RN02: Renderiza Estoque
+    // RN02: Renderiza Estoque (28 posições)
     const estoqueContainer = document.getElementById('estoque-posicoes');
     estoqueContainer.innerHTML = '';
     estoque.forEach((cor, index) => {
         const statusClass = cor ? cor : 'Vazio';
         const title = cor ? `Base ${cor} (Posição ${index + 1})` : `Posição ${index + 1}: Vazia`;
+        // Usa a primeira letra da cor (A, P, V) ou fica vazio
         estoqueContainer.innerHTML += `<div class="posicao-base ${statusClass}" title="${title}">${cor ? cor[0] : ''}</div>`;
     });
     document.getElementById('estoque-count').textContent = estoque.filter(c => c !== null).length;
 
-    // RN03: Renderiza Expedição
+    // RN03: Renderiza Expedição (12 posições) - CORRIGIDO PARA MOSTRAR COR E ID
     const expedicaoContainer = document.getElementById('expedicao-posicoes');
     expedicaoContainer.innerHTML = '';
+    
+    // Mapeia os pedidos prontos por posição
     const expedicaoMap = new Array(12).fill(null);
     expedicao.forEach(order => {
         if (order.posicaoExpedicao) {
-             expedicaoMap[order.posicaoExpedicao - 1] = order.id;
+             expedicaoMap[order.posicaoExpedicao - 1] = order; // Armazena o OBJETO do pedido
         }
     });
 
-    expedicaoMap.forEach((id, index) => {
-        const statusClass = id ? 'Pronto' : 'Vazio';
-        const title = id ? `Pedido ${id} (Posição ${index + 1})` : `Posição ${index + 1}: Vazia`;
-        expedicaoContainer.innerHTML += `<div class="posicao-base ${statusClass}" title="${title}">${id ? id.slice(1) : ''}</div>`;
+    expedicaoMap.forEach((order, index) => {
+        if (order) {
+            const baseClass = order.base; // Ex: 'Azul', 'Preto', 'Vermelho'
+            const title = `Pedido ${order.id} | Base ${order.base} (Posição ${index + 1})`;
+            const idNumber = order.id.slice(1); // Exibe P1001 como 1001
+
+            // Usa as classes 'Pronto' e a cor da base para o CSS
+            expedicaoContainer.innerHTML += `<div class="posicao-base Pronto ${baseClass}" title="${title}">${idNumber}</div>`;
+        } else {
+            // Posição Vazia
+            const title = `Posição ${index + 1}: Vazia`;
+            expedicaoContainer.innerHTML += `<div class="posicao-base Vazio" title="${title}"></div>`;
+        }
     });
     document.getElementById('expedicao-count').textContent = expedicao.length;
 }
@@ -206,7 +268,7 @@ function buscarPedido(pedidoId) {
     resultadoDiv.style.display = 'block';
 
     if (order) {
-        // Formata a classe do status (ex: STATUS.NAO_INICIADO -> status-nao-iniciado)
+        // Encontra a chave do STATUS para gerar a classe CSS correta
         const statusKey = Object.keys(STATUS).find(key => STATUS[key] === order.status);
         const statusClass = statusKey ? `status-${statusKey.toLowerCase().replace(/_/g, '-')}` : '';
         
@@ -226,7 +288,6 @@ function renderActiveOrders() {
     const listaUl = document.getElementById('lista-pedidos-ul');
     listaUl.innerHTML = '';
     
-    // Lista todos os pedidos que não estão Cancelados ou Finalizados (já na Expedição)
     const activeOrders = orders.filter(o => o.status !== STATUS.FINALIZADO && o.status !== STATUS.CANCELADO);
 
     if (activeOrders.length === 0) {
@@ -247,5 +308,4 @@ function renderActiveOrders() {
     });
 }
 
-// Chama a inicialização quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', initializeBancadasPage);
