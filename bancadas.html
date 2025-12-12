@@ -14,9 +14,11 @@
             </div>
             <h1 class="system-title">Insight Industrial</h1>
             <p class="subtitle">Plataforma de Monitoramento e Análise Industria 4.0</p>
+
             <div id="user-info">
                 Bem-vindo(a), <span id="display-user-name"></span> (<span id="display-user-type"></span>) | 
                 <a href="gerencia-usuario.html" id="nav-gerencia" style="display: none;">Gerência de Usuário</a> |
+                <a href="#" onclick="resetBancadasData(); return false;" id="nav-reset-data" style="display: none; color: red;">Resetar Dados</a> |
                 <button onclick="handleLogout()">Sair</button>
             </div>
         </header>
@@ -24,7 +26,7 @@
         <main id="bancadas-main-content">
             
         <section id="criacao-pedido">
-            <h2>➕ Criação de Novo Pedido (RF06)</h2>
+            <h2>➕ Criação de Novo Pedido</h2>
             <form id="form-cria-pedido">
                 <label for="cor-base">Cor da Base:</label>
                 <select id="cor-base" required>
@@ -94,7 +96,7 @@
                 <h2>Registro de Status e Dados Ambientais</h2>
                 <div class="coleta-container">
                     <div class="ambiental-box">
-                        <h4>Dados Ambientais (RF07)</h4>
+                        <h4>Dados Ambientais</h4>
                         <p>Temperatura: <span id="ambiental-temp">--</span> °C</p>
                         <p>Umidade: <span id="ambiental-umid">--</span> %</p>
                         <p class="nota-polling">Atualização: <span id="polling-status">Ativa</span></p>
@@ -105,7 +107,7 @@
             <hr>
 
             <section id="rastreamento-pedidos">
-                <h2>🔎 Rastreamento de Pedidos (RF04, RF05)</h2>
+                <h2>🔎 Rastreamento de Pedidos</h2>
     
                 <form id="form-rastreio">
                     <label for="pedido-id-busca">Buscar Pedido (ID):</label>

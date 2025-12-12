@@ -1,5 +1,45 @@
 // =======================================================================
-// LÓGICA DE INICIALIZAÇÃO DA PÁGINA DE BANCADAS (Dashboard)
+// LÓGICA DE CANCELAMENTO DE PEDIDO (FUNÇÃO GLOBAL) (MANTIDA)
+// =======================================================================
+
+function handleCancelOrder(orderId) {
+    const order = orders.find(o => o.id.toUpperCase() === orderId.toUpperCase());
+
+    if (!order) {
+        alert(`Erro: Pedido ${orderId} não encontrado.`);
+        return;
+    }
+
+    if (order.status === STATUS.FINALIZADO || order.status === STATUS.CANCELADO) {
+        alert(`Pedido ${orderId} já está ${order.status}. Não pode ser cancelado.`);
+        return;
+    }
+    
+    if (confirm(`Tem certeza que deseja cancelar o Pedido ${orderId}? Esta ação é irreversível.`)) {
+        
+        // 1. Atualiza o status
+        order.status = STATUS.CANCELADO;
+        order.local = 'Cancelado'; 
+
+        // 2. Libera a posição no Estoque se o pedido ainda estava lá (RN02)
+        const estoqueIndex = estoqueData.indexOf(order.base); 
+        // Se a base ainda estava no estoque e o pedido não iniciou, libera a base.
+        if (order.status === STATUS.NAO_INICIADO && estoqueIndex !== -1) {
+            estoqueData[estoqueIndex] = null;
+        }
+        
+        // 3. Salva e atualiza
+        saveBancadasData();
+        atualizarDadosBancada();
+        alert(`Pedido ${orderId} cancelado com sucesso.`);
+        
+        buscarPedido(orderId);
+    }
+}
+
+
+// =======================================================================
+// LÓGICA DE INICIALIZAÇÃO DA PÁGINA DE BANCADAS (Dashboard) (MANTIDA)
 // =======================================================================
 
 function initializeBancadasPage() {
@@ -12,13 +52,16 @@ function initializeBancadasPage() {
     document.getElementById('display-user-type').textContent = currentUser.tipo;
 
     const navGerencia = document.getElementById('nav-gerencia');
+    const navReset = document.getElementById('nav-reset-data'); 
+    
     if (currentUser.tipo === 'Professor') {
         navGerencia.style.display = 'inline-block';
+        if (navReset) navReset.style.display = 'inline-block'; 
     } else {
         navGerencia.style.display = 'none';
+        if (navReset) navReset.style.display = 'none'; 
     }
 
-    // Conecta o formulário de criação de pedido (RF06)
     const formCriaPedido = document.getElementById('form-cria-pedido');
     if (formCriaPedido) {
         formCriaPedido.addEventListener('submit', function(e) {
@@ -27,7 +70,6 @@ function initializeBancadasPage() {
         });
     }
 
-    // Conecta o formulário de rastreamento (RF04)
     const formRastreio = document.getElementById('form-rastreio');
     if (formRastreio) {
         formRastreio.addEventListener('submit', function(e) {
@@ -35,54 +77,13 @@ function initializeBancadasPage() {
             buscarPedido(document.getElementById('pedido-id-busca').value);
         });
     }
-
-    function handleCancelOrder(orderId) {
-        const order = orders.find(o => o.id.toUpperCase() === orderId.toUpperCase());
-
-        if (!order) {
-            alert(`Erro: Pedido ${orderId} não encontrado.`);
-            return;
-        }
-
-        if (order.status === STATUS.FINALIZADO || order.status === STATUS.CANCELADO) {
-            alert(`Pedido ${orderId} já está ${order.status}. Não pode ser cancelado.`);
-            return;
-        }
     
-        if (confirm(`Tem certeza que deseja cancelar o Pedido ${orderId}? Esta ação é irreversível.`)) {
-        
-            // 1. Atualiza o status
-            order.status = STATUS.CANCELADO;
-            order.local = 'Cancelado'; 
-
-            // 2. Libera a posição no Estoque se o pedido ainda estava lá (RN02)
-            if (order.local === 'Estoque') {
-                const estoqueIndex = estoqueData.findIndex(p => p === order.base);
-                if (estoqueIndex !== -1) {
-                    estoqueData[estoqueIndex] = null;
-                }
-            }
-        
-            // 3. Salva e atualiza
-            saveBancadasData();
-            atualizarDadosBancada();
-            alert(`Pedido ${orderId} cancelado com sucesso.`);
-        
-            // Oculta o resultado do rastreio ou exibe o novo status
-            document.getElementById('rastreio-resultado').style.display = 'none';
-        
-            // Chama a busca novamente para mostrar o status atualizado
-            buscarPedido(orderId);
-        }
-    }
-    
-    // Inicia o Polling e renderiza o dashboard
-    startPolling(); 
-    atualizarDadosBancada(); // Renderiza dados iniciais
+    polling(2); 
+    atualizarDadosBancada(); 
 }
 
 // =======================================================================
-// LÓGICA DE CRIAÇÃO DE PEDIDO (RF06)
+// LÓGICA DE CRIAÇÃO DE PEDIDO (RF06) (CORRIGIDA)
 // =======================================================================
 
 function handleCreateOrder() {
@@ -93,9 +94,8 @@ function handleCreateOrder() {
         document.getElementById('cor-parede-3').value,
     ];
     
-    const newId = 'P' + (1000 + orders.length + 1);
+    const newId = 'P' + (1000 + orders.length + 1); 
     
-    // RN06: Pedido nasce com status 'Não iniciado' e local 'Estoque'
     const newOrder = { 
         id: newId, 
         base: corBase, 
@@ -104,57 +104,64 @@ function handleCreateOrder() {
         local: 'Estoque' 
     };
 
-    // Tenta alocar no Estoque (RN02)
-    const emptyIndex = estoqueData.findIndex(p => p === null);
-    if (emptyIndex !== -1) {
-        orders.push(newOrder);
-        estoqueData[emptyIndex] = corBase;
-        saveBancadasData(); // Salva a alteração
-        alert(`Pedido ${newId} criado com sucesso! Status: ${newOrder.status}`);
-        
-        atualizarDadosBancada(); 
-        document.getElementById('form-cria-pedido').reset();
-    } else {
-        alert('Estoque lotado. Não foi possível criar o pedido.');
-    }
+    // CORREÇÃO: A CRIAÇÃO não verifica mais se há nulls no estoque (como se estivesse reservando a base).
+    // O consumo real (diminuição da contagem) acontece apenas no avanço do status.
+    orders.push(newOrder);
+    saveBancadasData(); 
+    alert(`Pedido ${newId} criado com sucesso! Status: ${newOrder.status}`);
+    
+    atualizarDadosBancada(); 
+    document.getElementById('form-cria-pedido').reset();
 }
 
 
 // =======================================================================
-// LÓGICA DE ATUALIZAÇÃO DE DADOS E POLLING (RF07, RNF01)
+// LÓGICA DE ATUALIZAÇÃO DE DADOS E POLLING (RF07, RNF01, Dados Reais)
 // =======================================================================
 
-function simulateFetchData() {
-    // RNF01: Simula coleta de dados (Polling)
-    ambientalData.temperatura = (20 + Math.random() * 10).toFixed(1); 
-    ambientalData.umidade = (50 + Math.random() * 20).toFixed(1);
+// Lógica de simulação de avanço do pedido e consumo de estoque
+function updateOrderProgression() {
     
-    // Simula o avanço de pedidos (muito simplificado)
     orders.forEach(order => {
+        // Ignora pedidos finalizados ou cancelados
+        if (order.status === STATUS.FINALIZADO || order.status === STATUS.CANCELADO) {
+            return;
+        }
+
         if (order.status === STATUS.NAO_INICIADO && Math.random() < 0.2) {
-            order.status = STATUS.AGUARDANDO_MODULO;
-            order.local = 'Processo';
+            
+            // RN02: REMOVE A BASE DO ESTOQUE AQUI, ao entrar em produção.
+            const estoqueIndex = estoqueData.indexOf(order.base);
+            
+            // O pedido só avança se a base estiver disponível no estoque (posição com a cor)
+            if (estoqueIndex !== -1) { 
+                
+                // 1. Transition status: Estoque -> Processo (Aguardando Módulo)
+                order.status = STATUS.AGUARDANDO_MODULO;
+                order.local = 'Processo';
+                
+                // 2. Remove base do Stock (O CONSUMO OCORRE AQUI)
+                estoqueData[estoqueIndex] = null; // A posição fica nula/vazia, DIMINUINDO A CONTAGEM
+            }
+            // Se a base não estiver mais no estoque (estoqueIndex == -1), o pedido fica parado em NAO_INICIADO.
+            
         } else if (order.status === STATUS.AGUARDANDO_MODULO && Math.random() < 0.2) {
+            // Transition status: Aguardando Módulo -> Em Processo (Ainda em Processo)
             order.status = STATUS.EM_PROCESSO;
             order.local = 'Processo';
-        } else if (order.status === STATUS.EM_PROCESSO && Math.random() < 0.1) {
-            
-            // ----------------------------------------------------
-            // Ação de Finalização do Pedido
-            // ----------------------------------------------------
+
+        } else if (order.status === STATUS.EM_PROCESSO && order.local === 'Processo' && Math.random() < 0.2) {
+            // Transição de Processo -> Montagem
+            order.local = 'Montagem'; 
+
+        } else if (order.status === STATUS.EM_PROCESSO && order.local === 'Montagem' && Math.random() < 0.1) {
+            // Ação de Finalização do Pedido: Montagem -> Expedição
             order.status = STATUS.FINALIZADO;
             order.local = 'Expedição';
-            
-            // RN02: REMOVE A BASE DO ESTOQUE
-            const estoqueIndex = estoqueData.findIndex(p => p === order.base);
-            if (estoqueIndex !== -1) {
-                estoqueData[estoqueIndex] = null; // Libera o espaço
-            }
         }
     });
 
     // Simula a alocação de pedidos finalizados na Expedição (RN03)
-    // Agora só alocamos se o status já for FINALIZADO e ainda não tiver posição.
     const expedicaoOrdersToAllocate = orders.filter(o => 
         o.local === 'Expedição' && 
         o.status === STATUS.FINALIZADO && 
@@ -164,44 +171,97 @@ function simulateFetchData() {
     expedicaoOrdersToAllocate.forEach(order => {
         const occupiedPositions = orders.filter(o => o.local === 'Expedição' && o.status === STATUS.FINALIZADO).map(o => o.posicaoExpedicao);
         
-        for (let i = 1; i <= 12; i++) { // 12 espaços na Expedição (RN03)
+        for (let i = 1; i <= 12; i++) { 
             if (!occupiedPositions.includes(i)) {
                 order.posicaoExpedicao = i;
                 break;
             }
         }
     });
-    
-    saveBancadasData(); // Persiste a mudança simulada
 }
 
-// Inicia o Polling (RF07)
-function startPolling() {
-    if (pollingInterval) clearInterval(pollingInterval);
-    pollingInterval = setInterval(async () => {
-        simulateFetchData();
+
+// Função de busca que integra API real (Apenas para Dados Ambientais)
+function buscandoDadosBancada(){
+    fetch('http://10.77.241.112:1880/smartsense/estoque')
+    .then(res => {
+        if (!res.ok) throw new Error('Falha na conexão com a API de dados da bancada.');
+        return res.json();
+    })
+    .then(data => {
+        
+        // 1. Atualiza DADOS AMBIENTAIS com dados reais
+        if (data.temperatura && data.umidade) {
+            ambientalData.temperatura = parseFloat(data.temperatura).toFixed(1);
+            ambientalData.umidade = parseFloat(data.umidade).toFixed(1);
+        } else {
+             // FALLBACK: Simula se a API não retornar T/U
+             ambientalData.temperatura = (20 + Math.random() * 10).toFixed(1); 
+             ambientalData.umidade = (50 + Math.random() * 20).toFixed(1);
+        }
+        
+        // 2. Simula o avanço de pedidos (Progressão e CONSUMO DE ESTOQUE LOCAL)
+        updateOrderProgression();
+
+        // 3. Salva e Renderiza a tela
+        saveBancadasData(); 
         atualizarDadosBancada();
-    }, 2000); // A cada 2 segundos
+    })
+    .catch(error => {
+        console.error('Erro na busca de dados da API:', error.message, 'Usando simulação para Dados Ambientais e Progressão.');
+        
+        // Em caso de falha na API, mantém a simulação de progressão
+        updateOrderProgression();
+        
+        // E simula os dados ambientais
+        ambientalData.temperatura = (20 + Math.random() * 10).toFixed(1); 
+        ambientalData.umidade = (50 + Math.random() * 20).toFixed(1);
+        
+        saveBancadasData();
+        atualizarDadosBancada();
+    });
 }
 
-// Atualiza o dashboard completo
+function polling(segundos){
+    if (pollingInterval) clearTimeout(pollingInterval); 
+    
+    pollingInterval = setTimeout(() => {
+        console.log('Buscando dados da bancada em tempo real...')
+        buscandoDadosBancada()
+        polling(segundos) 
+    }, segundos * 1000)
+}
+
+
 async function atualizarDadosBancada() {
-    // Filtra pedidos para cada módulo
-    // Note que a expedição só mostra pedidos FINALIZADOS (RN03)
-    const expedicaoOrders = orders.filter(o => o.local === 'Expedição' && o.status === STATUS.FINALIZADO);
-    const processoOrders = orders.filter(o => o.local === 'Processo' || o.local === 'Montagem');
     
-    // RF03: Renderiza bancadas e dados
+    const expedicaoOrders = orders.filter(o => 
+        o.status === STATUS.FINALIZADO && 
+        o.local === 'Expedição' 
+    );
+    
+    const pedidosProcesso = orders.filter(o => 
+        o.local === 'Processo' && 
+        o.status !== STATUS.FINALIZADO && 
+        o.status !== STATUS.CANCELADO
+    ).length;
+
+    const pedidosMontagem = orders.filter(o => 
+        o.local === 'Montagem' && 
+        o.status !== STATUS.FINALIZADO && 
+        o.status !== STATUS.CANCELADO
+    ).length;
+    
+    
     renderBenches(estoqueData, expedicaoOrders); 
-    renderProcessModules(processoOrders.filter(o => o.local === 'Processo').length, processoOrders.filter(o => o.local === 'Montagem').length);
-    renderEnvironmentalData(ambientalData); // RN04
+    renderProcessModules(pedidosProcesso, pedidosMontagem);
+    renderEnvironmentalData(ambientalData); 
     
-    // RF04: Renderiza listagem de pedidos ativos
     renderActiveOrders(); 
 }
 
 // =======================================================================
-// FUNÇÕES DE RENDERIZAÇÃO E RASTREAMENTO (RF03, RF04, RF05)
+// FUNÇÕES DE RENDERIZAÇÃO E RASTREAMENTO (RF03, RF04, RF05) (MANTIDAS)
 // =======================================================================
 
 function renderBenches(estoque, expedicao) {
@@ -211,56 +271,54 @@ function renderBenches(estoque, expedicao) {
     estoque.forEach((cor, index) => {
         const statusClass = cor ? cor : 'Vazio';
         const title = cor ? `Base ${cor} (Posição ${index + 1})` : `Posição ${index + 1}: Vazia`;
-        // Usa a primeira letra da cor (A, P, V) ou fica vazio
         estoqueContainer.innerHTML += `<div class="posicao-base ${statusClass}" title="${title}">${cor ? cor[0] : ''}</div>`;
     });
-    document.getElementById('estoque-count').textContent = estoque.filter(c => c !== null).length;
+    
+    // Contagem de estoque atualizada (28 - bases nulas)
+    document.getElementById('estoque-count').textContent = estoque.filter(c => c !== null).length + '/28';
 
-    // RN03: Renderiza Expedição (12 posições) - CORRIGIDO PARA MOSTRAR COR E ID
+    // RN03: Renderiza Expedição (12 posições)
     const expedicaoContainer = document.getElementById('expedicao-posicoes');
     expedicaoContainer.innerHTML = '';
     
-    // Mapeia os pedidos prontos por posição
     const expedicaoMap = new Array(12).fill(null);
     expedicao.forEach(order => {
         if (order.posicaoExpedicao) {
-             expedicaoMap[order.posicaoExpedicao - 1] = order; // Armazena o OBJETO do pedido
+             expedicaoMap[order.posicaoExpedicao - 1] = order; 
         }
     });
 
     expedicaoMap.forEach((order, index) => {
         if (order) {
-            const baseClass = order.base; // Ex: 'Azul', 'Preto', 'Vermelho'
+            const baseClass = order.base; 
             const title = `Pedido ${order.id} | Base ${order.base} (Posição ${index + 1})`;
-            const idNumber = order.id.slice(1); // Exibe P1001 como 1001
+            const idNumber = order.id.slice(1); 
 
-            // Usa as classes 'Pronto' e a cor da base para o CSS
             expedicaoContainer.innerHTML += `<div class="posicao-base Pronto ${baseClass}" title="${title}">${idNumber}</div>`;
         } else {
-            // Posição Vazia
             const title = `Posição ${index + 1}: Vazia`;
             expedicaoContainer.innerHTML += `<div class="posicao-base Vazio" title="${title}"></div>`;
         }
     });
-    document.getElementById('expedicao-count').textContent = expedicao.length;
+    document.getElementById('expedicao-count').textContent = expedicao.length + '/12';
 }
 
 function renderProcessModules(procCount, montCount) {
-    // RN01: Módulos Processo e Montagem
+    // RN01: Módulos Processo
     document.getElementById('processo-status').textContent = procCount > 0 ? 'Em Andamento' : 'Ocioso';
     document.getElementById('processo-modulos').textContent = procCount;
 
+    // RN01: Módulos Montagem
     document.getElementById('montagem-status').textContent = montCount > 0 ? 'Em Andamento' : 'Ocioso';
     document.getElementById('montagem-modulos').textContent = montCount;
 }
 
 function renderEnvironmentalData(data) {
-    // RN04: Dados Ambientais
+    // RN04: Dados Ambientais 
     document.getElementById('ambiental-temp').textContent = data.temperatura;
     document.getElementById('ambiental-umid').textContent = data.umidade;
 }
 
-// Rastreamento (RF04, RF05)
 function buscarPedido(pedidoId) {
     const order = orders.find(o => o.id.toUpperCase() === pedidoId.toUpperCase());
     const resultadoDiv = document.getElementById('rastreio-resultado');
@@ -268,22 +326,31 @@ function buscarPedido(pedidoId) {
     resultadoDiv.style.display = 'block';
 
     if (order) {
-        // Encontra a chave do STATUS para gerar a classe CSS correta
         const statusKey = Object.keys(STATUS).find(key => STATUS[key] === order.status);
         const statusClass = statusKey ? `status-${statusKey.toLowerCase().replace(/_/g, '-')}` : '';
         
+        const isCancellable = order.status !== STATUS.FINALIZADO && order.status !== STATUS.CANCELADO;
+        
+        let acoesHtml = '';
+        if (isCancellable) {
+            acoesHtml = `<button class="action-btn delete-btn" onclick="handleCancelOrder('${order.id}')">❌ Cancelar Pedido</button>`;
+        } else if (order.status === STATUS.CANCELADO) {
+             acoesHtml = `<span style="color: red; font-weight: bold;">Este pedido foi CANCELADO.</span>`;
+        }
+
+
         resultadoDiv.innerHTML = `
             <h4>Pedido: ${order.id}</h4>
             <p>Local Atual: <strong>${order.local}</strong></p>
             <p>Status: <strong class="${statusClass}">${order.status}</strong></p>
             <p>Base: ${order.base} | Paredes: ${order.paredes.join(', ')}</p>
+            <div style="margin-top: 10px;">${acoesHtml}</div>
         `;
     } else {
         resultadoDiv.innerHTML = `<h4>Pedido ${pedidoId} não encontrado.</h4>`;
     }
 }
 
-// Listagem de Pedidos Ativos (RF04)
 function renderActiveOrders() {
     const listaUl = document.getElementById('lista-pedidos-ul');
     listaUl.innerHTML = '';
