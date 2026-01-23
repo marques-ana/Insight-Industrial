@@ -59,50 +59,100 @@
             </form>
         </section>
             
-            <section id="status-bancadas">
+           <section id="status-bancadas">
                 <h2>Status Operacional (4 Módulos)</h2>
                 <div class="status-grid">
                     <div class="status-box" id="bancada-estoque">
                         <h3>Módulo 1: Estoque</h3>
-                        <p>Posições Ocupadas: <span id="estoque-count">0</span>/28</p>
-                            <div class="posicao-container" id="estoque-posicoes">
-                            </div>
+                        <div class="dados-modais" id="dados-m1">
+                            <table class="tabela-dados">
+                                <tr>
+                                    <td><strong>Humi:</strong> <span id="m1-humi">--</span>%</td>
+                                    <td><strong>Ai00:</strong> <span id="m1-ai00">--</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Vrms:</strong> <span id="m1-vrms">--</span>V</td>
+                                    <td><strong>Irms:</strong> <span id="m1-irms">--</span>A</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Appp:</strong> <span id="m1-appp">--</span>VA</td>
+                                    <td><strong>Actp:</strong> <span id="m1-actp">--</span>W</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <p>Posições: <span id="estoque-count">0</span></p>
+                        <div class="posicao-container" id="estoque-posicoes"></div>
                     </div>
 
                     <div class="status-box" id="bancada-processo">
                         <h3>Módulo 2: Processo</h3>
+                        <div class="dados-modais" id="dados-m1">
+                            <table class="tabela-dados">
+                                <tr>
+                                    <td><strong>Humi:</strong> <span id="m1-humi">--</span>%</td>
+                                    <td><strong>Ai00:</strong> <span id="m1-ai00">--</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Vrms:</strong> <span id="m1-vrms">--</span>V</td>
+                                    <td><strong>Irms:</strong> <span id="m1-irms">--</span>A</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Appp:</strong> <span id="m1-appp">--</span>VA</td>
+                                    <td><strong>Actp:</strong> <span id="m1-actp">--</span>W</td>
+                                </tr>
+                            </table>
+                        </div>
                         <p>Status: <span id="processo-status">Ocioso</span></p>
                         <p>Módulos Ativos: <span id="processo-modulos">0</span></p>
                     </div>
 
                     <div class="status-box" id="bancada-montagem">
                         <h3>Módulo 3: Montagem</h3>
+                        <div class="dados-modais" id="dados-m1">
+                            <table class="tabela-dados">
+                                <tr>
+                                    <td><strong>Humi:</strong> <span id="m1-humi">--</span>%</td>
+                                    <td><strong>Ai00:</strong> <span id="m1-ai00">--</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Vrms:</strong> <span id="m1-vrms">--</span>V</td>
+                                    <td><strong>Irms:</strong> <span id="m1-irms">--</span>A</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Appp:</strong> <span id="m1-appp">--</span>VA</td>
+                                    <td><strong>Actp:</strong> <span id="m1-actp">--</span>W</td>
+                                </tr>
+                            </table>
+                        </div>
                         <p>Status: <span id="montagem-status">Ocioso</span></p>
                         <p>Módulos Ativos: <span id="montagem-modulos">0</span></p>
                     </div>
 
                     <div class="status-box" id="bancada-expedicao">
                         <h3>Módulo 4: Expedição</h3>
-                        <p>Pedidos Prontos: <span id="expedicao-count">0</span>/12</p>
-                        <div class="posicao-container" id="expedicao-posicoes">
-                            </div>
+                        <div class="dados-modais" id="dados-m1">
+                            <table class="tabela-dados">
+                                <tr>
+                                    <td><strong>Humi:</strong> <span id="m1-humi">--</span>%</td>
+                                    <td><strong>Ai00:</strong> <span id="m1-ai00">--</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Vrms:</strong> <span id="m1-vrms">--</span>V</td>
+                                    <td><strong>Irms:</strong> <span id="m1-irms">--</span>A</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Appp:</strong> <span id="m1-appp">--</span>VA</td>
+                                    <td><strong>Actp:</strong> <span id="m1-actp">--</span>W</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <p>Pedidos Prontos: <span id="expedicao-count">0</span></p>
+                        <div class="posicao-container" id="expedicao-posicoes"></div>
                     </div>
                 </div>
             </section>
             
             <hr>
-            
-            <section id="coleta-dados">
-                <h2>Registro de Status e Dados Ambientais</h2>
-                <div class="coleta-container">
-                    <div class="ambiental-box">
-                        <h4>Dados Ambientais</h4>
-                        <p>Temperatura: <span id="ambiental-temp">--</span> °C</p>
-                        <p>Umidade: <span id="ambiental-umid">--</span> %</p>
-                        <p class="nota-polling">Atualização: <span id="polling-status">Ativa</span></p>
-                    </div>
-                </div>
-    '       </section>
 
             <hr>
 

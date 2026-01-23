@@ -182,44 +182,33 @@ function updateOrderProgression() {
 
 
 // Função de busca que integra API real (Apenas para Dados Ambientais)
-function buscandoDadosBancada(){
+function buscandoDadosBancada() {
     fetch('http://10.77.241.112:1880/smartsense/estoque')
-    .then(res => {
-        if (!res.ok) throw new Error('Falha na conexão com a API de dados da bancada.');
-        return res.json();
-    })
+    .then(res => res.json())
     .then(data => {
+        // data deve vir no formato: { m1: { humi: 50, ai00: 176, ... }, m2: { ... } }
         
-        // 1. Atualiza DADOS AMBIENTAIS com dados reais
-        if (data.temperatura && data.umidade) {
-            ambientalData.temperatura = parseFloat(data.temperatura).toFixed(1);
-            ambientalData.umidade = parseFloat(data.umidade).toFixed(1);
-        } else {
-             // FALLBACK: Simula se a API não retornar T/U
-             ambientalData.temperatura = (20 + Math.random() * 10).toFixed(1); 
-             ambientalData.umidade = (50 + Math.random() * 20).toFixed(1);
+        // Exemplo de atualização para o Módulo 1
+        if (data.m1) {
+            document.getElementById('m1-humi').textContent = data.m1.humi;
+            document.getElementById('m1-ai00').textContent = data.m1.ai00;
+            document.getElementById('m1-vrms').textContent = data.m1.vrms;
+            document.getElementById('m1-irms').textContent = data.m1.irms;
+            document.getElementById('m1-appp').textContent = data.m1.appp;
+            document.getElementById('m1-actp').textContent = data.m1.actp;
         }
-        
-        // 2. Simula o avanço de pedidos (Progressão e CONSUMO DE ESTOQUE LOCAL)
-        updateOrderProgression();
 
-        // 3. Salva e Renderiza a tela
-        saveBancadasData(); 
-        atualizarDadosBancada();
-    })
-    .catch(error => {
-        console.error('Erro na busca de dados da API:', error.message, 'Usando simulação para Dados Ambientais e Progressão.');
-        
-        // Em caso de falha na API, mantém a simulação de progressão
+        // Mantém a lógica de temperatura e umidade global que você já tinha
+        if (data.temperatura) {
+            ambientalData.temperatura = data.temperatura;
+            ambientalData.umidade = data.umidade;
+        }
+
         updateOrderProgression();
-        
-        // E simula os dados ambientais
-        ambientalData.temperatura = (20 + Math.random() * 10).toFixed(1); 
-        ambientalData.umidade = (50 + Math.random() * 20).toFixed(1);
-        
         saveBancadasData();
         atualizarDadosBancada();
-    });
+    })
+    .catch(err => console.error("Erro ao buscar dados:", err));
 }
 
 function polling(segundos){
@@ -314,9 +303,24 @@ function renderProcessModules(procCount, montCount) {
 }
 
 function renderEnvironmentalData(data) {
-    // RN04: Dados Ambientais 
-    document.getElementById('ambiental-temp').textContent = data.temperatura;
-    document.getElementById('ambiental-umid').textContent = data.umidade;
+    // 1. Atualiza os dados globais (se ainda existirem no seu rodapé)
+    if(document.getElementById('ambiental-temp')) 
+        document.getElementById('ambiental-temp').textContent = data.temperatura || '--';
+    if(document.getElementById('ambiental-umid')) 
+        document.getElementById('ambiental-umid').textContent = data.umidade || '--';
+
+    // 2. Loop para atualizar os 4 módulos (m1, m2, m3, m4)
+    for (let i = 1; i <= 4; i++) {
+        const mod = data[`m${i}`]; // Busca m1, m2... dentro do JSON
+        if (mod) {
+            document.getElementById(`m${i}-humi`).textContent = mod.humi;
+            document.getElementById(`m${i}-ai00`).textContent = mod.ai00;
+            document.getElementById(`m${i}-vrms`).textContent = mod.vrms;
+            document.getElementById(`m${i}-irms`).textContent = mod.irms;
+            document.getElementById(`m${i}-appp`).textContent = mod.appp;
+            document.getElementById(`m${i}-actp`).textContent = mod.actp;
+        }
+    }
 }
 
 function buscarPedido(pedidoId) {

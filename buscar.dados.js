@@ -11,7 +11,7 @@ function polling(segundos){
 }
 
 function buscandoDadosBancada(){
-    fetch('http://10.77.241.112:1880/smartsense/estoque')
+    fetch('http://10 .77.241.173:1880/smartsense/estoque')
     .then(res=>res.json())
     .then(data=>{
     console.log(data)
