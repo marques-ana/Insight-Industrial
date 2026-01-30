@@ -1,51 +1,34 @@
-
-window.onload = ()=>{
-    buscandarlistausuarios() 
-    logar()
-}
-
-
-function logar(e){
-    e.preventDefault();
-
-
-    //Busca os inputs do HTML
-    let input_usuario = document.getElementById("usuario");
-    let input_senha = document.getElementById("senha");
-
-    //Tratamento de erros, caso não tiver esses elementos
-    if(!input_usuario || !input_senha){
-        return;
+window.onload = () => {
+    // Só chama o logar se houver um formulário de login na página atual
+    const formLogin = document.getElementById("form-login"); // Certifique-se que o ID existe no HTML
+    if (formLogin) {
+        formLogin.onsubmit = logar;
     }
-
-    console.log(input_usuario)
-
-    //Se chegou até aqui, conseguiu coletar usuário e senha
-    let usuario = input_usuario.value;
-    let senha = input_senha.value;
-
-    //Com o usuário e senha, podemos tentar o login
-    fetch("http://10.77.241.173:1880/smartsense/listausuario",{
-        method:"POST",
-        body:JSON.stringify({usuario,senha})
-    }).then((resposta)=>{
-        console.log(resposta)
-        if(resposta.ok){
-            resposta.json()
-        }
-    }).then((usuario)=>{
-        alert("Olá, usuario");
-    })
-
+    
+    // Se estiver na página de gerência, busca a lista
+    if (document.getElementById('users-table-body')) {
+        renderUsersTable(); 
+    }
 }
 
+function logar(e) {
+    if (e) e.preventDefault();
 
-function buscandarlistausuarios(){
-    console.log(buscandarlistausuarios)
-    fetch('http://10.77.241.173:1880/smartsense/listausuario')
-    .then(res=>res.json())
-    .then(data=>{
-    console.log(data)
+    let email = document.getElementById("email").value;
+    let senha = document.getElementById("senha").value;
+
+    fetch("http://localhost:1880/autenticacao/autenticar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }, // Obrigatório para o Node-RED entender o JSON
+        body: JSON.stringify({ email, senha }) // Enviando email e senha corretamente
     })
+    .then(resposta => {
+        if (resposta.ok) return resposta.json();
+        throw new Error("Falha no login");
+    })
+    .then(data => {
+        alert("Olá, " + (data.nome || "usuário"));
+        window.location.href = '../index/index.html';
+    })
+    .catch(err => alert("Email ou senha incorretos."));
 }
-
