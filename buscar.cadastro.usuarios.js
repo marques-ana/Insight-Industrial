@@ -17,7 +17,7 @@ function logar(e) {
     let email = document.getElementById("email").value;
     let senha = document.getElementById("senha").value;
 
-    fetch("http://localhost:1880/autenticacao/autenticar", {
+    fetch("http://10.77.241.122:1880/autenticacao/autenticar", {
         method: "POST",
         headers: { "Content-Type": "application/json" }, // Obrigatório para o Node-RED entender o JSON
         body: JSON.stringify({ email, senha }) // Enviando email e senha corretamente

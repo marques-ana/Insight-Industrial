@@ -1,6 +1,8 @@
 // =======================================================================
 // LÓGICA DE CANCELAMENTO DE PEDIDO (FUNÇÃO GLOBAL) (MANTIDA)
 // =======================================================================
+let pollingInterval; // Define a variável globalmente no arquivo
+
 
 function handleCancelOrder(orderId) {
     const order = orders.find(o => o.id.toUpperCase() === orderId.toUpperCase());
@@ -42,11 +44,26 @@ function handleCancelOrder(orderId) {
 // LÓGICA DE INICIALIZAÇÃO DA PÁGINA DE BANCADAS (Dashboard) (MANTIDA)
 // =======================================================================
 
+// 1. Declare a variável no topo do arquivo bancadas.js
+let pollingInterval; 
+
 function initializeBancadasPage() {
     if (!currentUser) {
         window.location.href = 'index.html'; 
         return;
     }
+
+    // 2. Adicione a chamada para iniciar a busca de dados
+    console.log("Iniciando monitoramento das bancadas...");
+    
+    // Busca os dados imediatamente ao carregar
+    buscandoDadosBancada(); 
+
+    // Define o intervalo para atualizar a cada 5 segundos
+    if (!pollingInterval) {
+        pollingInterval = setInterval(buscandoDadosBancada, 5000);
+    }
+}
 
     document.getElementById('display-user-name').textContent = `${currentUser.nome} ${currentUser.sobrenome}`;
     document.getElementById('display-user-type').textContent = currentUser.tipo;
@@ -183,7 +200,7 @@ function updateOrderProgression() {
 
 // Função de busca que integra API real (Apenas para Dados Ambientais)
 function buscandoDadosBancada() {
-    fetch('http://10.77.241.112:1880/smartsense/estoque')
+    fetch('http://10.77.241.122:1880/smartsense/estoque')
     .then(res => res.json())
     .then(data => {
         // data deve vir no formato: { m1: { humi: 50, ai00: 176, ... }, m2: { ... } }

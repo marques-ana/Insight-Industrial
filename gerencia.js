@@ -31,7 +31,7 @@ async function renderUsersTable() {
 
     try {
         // Substitua pelo seu IP ou 'localhost' para evitar o erro de TIMED_OUT
-        const res = await fetch('http://localhost:1880/smartsense/listausuario');
+        const res = await fetch('http://10.77.241.122:1880/smartsense/listausuario');
         const users = await res.json();
         
         // Guarda na variável global para as funções de Editar/Excluir
@@ -100,7 +100,7 @@ function editUser(userId) {
 
 function deleteUser(userId) {
     if (confirm('Deseja realmente excluir este usuário no servidor?')) {
-        fetch(`http://localhost:1880/smartsense/usuario/remover/${userId}`, {
+        fetch(`http://10.77.241.122:1880/smartsense/usuario/remover/${userId}`, {
             method: 'DELETE'
         })
         .then(() => {
@@ -126,12 +126,12 @@ async function handleUserFormSubmit(e) {
     };
 
     try {
-        let url = 'http://localhost:1880/smartsense/usuario/criar';
+        let url = 'http://10.77.241.122:1880/smartsense/usuario/criar';
         let method = 'POST';
 
         // Se existir um ID, muda para a rota de ALTERAR (PUT)
         if (userId) {
-            url = `http://localhost:1880/smartsense/usuario/alterar/${userId}`;
+            url = `http://10.77.241.122:1880/smartsense/usuario/alterar/${userId}`;
             method = 'PUT';
         }
 
@@ -154,7 +154,4 @@ async function handleUserFormSubmit(e) {
     }
 }
 
-//document.addEventListener('DOMContentLoaded', initializeGerenciaUsuarioPage);
-window.onload = ()=>{
-    initializeGerenciaUsuarioPage()
-}
+document.addEventListener('DOMContentLoaded', initializeGerenciaUsuarioPage);
