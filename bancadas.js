@@ -1,84 +1,41 @@
 // =======================================================================
-// LÓGICA DE CANCELAMENTO DE PEDIDO (FUNÇÃO GLOBAL) (MANTIDA)
+// CONFIGURAÇÕES E ESTADOS GLOBAIS
 // =======================================================================
-let pollingInterval; // Define a variável globalmente no arquivo
-
-
-function handleCancelOrder(orderId) {
-    const order = orders.find(o => o.id.toUpperCase() === orderId.toUpperCase());
-
-    if (!order) {
-        alert(`Erro: Pedido ${orderId} não encontrado.`);
-        return;
-    }
-
-    if (order.status === STATUS.FINALIZADO || order.status === STATUS.CANCELADO) {
-        alert(`Pedido ${orderId} já está ${order.status}. Não pode ser cancelado.`);
-        return;
-    }
-    
-    if (confirm(`Tem certeza que deseja cancelar o Pedido ${orderId}? Esta ação é irreversível.`)) {
-        
-        // 1. Atualiza o status
-        order.status = STATUS.CANCELADO;
-        order.local = 'Cancelado'; 
-
-        // 2. Libera a posição no Estoque se o pedido ainda estava lá (RN02)
-        const estoqueIndex = estoqueData.indexOf(order.base); 
-        // Se a base ainda estava no estoque e o pedido não iniciou, libera a base.
-        if (order.status === STATUS.NAO_INICIADO && estoqueIndex !== -1) {
-            estoqueData[estoqueIndex] = null;
-        }
-        
-        // 3. Salva e atualiza
-        saveBancadasData();
-        atualizarDadosBancada();
-        alert(`Pedido ${orderId} cancelado com sucesso.`);
-        
-        buscarPedido(orderId);
-    }
-}
-
+let pollingInterval; // Declarada apenas UMA VEZ para evitar erro de "already declared"
 
 // =======================================================================
-// LÓGICA DE INICIALIZAÇÃO DA PÁGINA DE BANCADAS (Dashboard) (MANTIDA)
+// LÓGICA DE INICIALIZAÇÃO DA PÁGINA (Dashboard)
 // =======================================================================
-
-// 1. Declare a variável no topo do arquivo bancadas.js
-let pollingInterval; 
 
 function initializeBancadasPage() {
+    // 1. Verifica se existe um usuário logado (dados vêm do index.js)
     if (!currentUser) {
         window.location.href = 'index.html'; 
         return;
     }
 
-    // 2. Adicione a chamada para iniciar a busca de dados
     console.log("Iniciando monitoramento das bancadas...");
     
-    // Busca os dados imediatamente ao carregar
-    buscandoDadosBancada(); 
+    // 2. Exibe os dados do usuário logado no topo da página
+    const userNameElement = document.getElementById('display-user-name');
+    const userTypeElement = document.getElementById('display-user-type');
+    
+    if (userNameElement) userNameElement.textContent = currentUser.nome;
+    if (userTypeElement) userTypeElement.textContent = currentUser.tipo;
 
-    // Define o intervalo para atualizar a cada 5 segundos
-    if (!pollingInterval) {
-        pollingInterval = setInterval(buscandoDadosBancada, 5000);
-    }
-}
-
-    document.getElementById('display-user-name').textContent = `${currentUser.nome} ${currentUser.sobrenome}`;
-    document.getElementById('display-user-type').textContent = currentUser.tipo;
-
+    // 3. Lógica de Controle de Acesso (Visão do Professor)
     const navGerencia = document.getElementById('nav-gerencia');
     const navReset = document.getElementById('nav-reset-data'); 
     
     if (currentUser.tipo === 'Professor') {
-        navGerencia.style.display = 'inline-block';
+        if (navGerencia) navGerencia.style.display = 'inline-block';
         if (navReset) navReset.style.display = 'inline-block'; 
     } else {
-        navGerencia.style.display = 'none';
+        if (navGerencia) navGerencia.style.display = 'none';
         if (navReset) navReset.style.display = 'none'; 
     }
 
+    // 4. Configuração dos Eventos de Formulário (Criação e Rastreio)
     const formCriaPedido = document.getElementById('form-cria-pedido');
     if (formCriaPedido) {
         formCriaPedido.addEventListener('submit', function(e) {
@@ -91,16 +48,19 @@ function initializeBancadasPage() {
     if (formRastreio) {
         formRastreio.addEventListener('submit', function(e) {
             e.preventDefault();
-            buscarPedido(document.getElementById('pedido-id-busca').value);
+            const idBusca = document.getElementById('pedido-id-busca').value;
+            buscarPedido(idBusca);
         });
     }
     
-    polling(2); 
+    // 5. Inicia a busca de dados inicial e o loop de atualização
+    buscandoDadosBancada(); 
+    polling(5); // Atualiza a cada 5 segundos
     atualizarDadosBancada(); 
 }
 
 // =======================================================================
-// LÓGICA DE CRIAÇÃO DE PEDIDO (RF06) (CORRIGIDA)
+// LÓGICA DE PEDIDOS (Criação e Cancelamento)
 // =======================================================================
 
 function handleCreateOrder() {
@@ -118,76 +78,76 @@ function handleCreateOrder() {
         base: corBase, 
         paredes: corParedes, 
         status: STATUS.NAO_INICIADO, 
-        local: 'Estoque' 
+        local: 'Estoque',
+        usuario_id: localStorage.getItem('usuarioId') 
     };
 
-    // CORREÇÃO: A CRIAÇÃO não verifica mais se há nulls no estoque (como se estivesse reservando a base).
-    // O consumo real (diminuição da contagem) acontece apenas no avanço do status.
     orders.push(newOrder);
     saveBancadasData(); 
-    alert(`Pedido ${newId} criado com sucesso! Status: ${newOrder.status}`);
+    alert(`Pedido ${newId} criado com sucesso!`);
     
     atualizarDadosBancada(); 
     document.getElementById('form-cria-pedido').reset();
 }
 
+function handleCancelOrder(orderId) {
+    const order = orders.find(o => o.id.toUpperCase() === orderId.toUpperCase());
 
-// =======================================================================
-// LÓGICA DE ATUALIZAÇÃO DE DADOS E POLLING (RF07, RNF01, Dados Reais)
-// =======================================================================
+    if (!order) {
+        alert(`Erro: Pedido ${orderId} não encontrado.`);
+        return;
+    }
 
-// Lógica de simulação de avanço do pedido e consumo de estoque
-function updateOrderProgression() {
+    if (order.status === STATUS.FINALIZADO || order.status === STATUS.CANCELADO) {
+        alert(`Pedido ${orderId} já está ${order.status}.`);
+        return;
+    }
     
-    orders.forEach(order => {
-        // Ignora pedidos finalizados ou cancelados
-        if (order.status === STATUS.FINALIZADO || order.status === STATUS.CANCELADO) {
-            return;
+    if (confirm(`Tem certeza que deseja cancelar o Pedido ${orderId}?`)) {
+        order.status = STATUS.CANCELADO;
+        order.local = 'Cancelado'; 
+
+        const estoqueIndex = estoqueData.indexOf(order.base); 
+        if (order.status === STATUS.NAO_INICIADO && estoqueIndex !== -1) {
+            estoqueData[estoqueIndex] = null;
         }
+        
+        saveBancadasData();
+        atualizarDadosBancada();
+        alert(`Pedido ${orderId} cancelado.`);
+        buscarPedido(orderId);
+    }
+}
+
+// =======================================================================
+// LÓGICA DE SIMULAÇÃO E MOVIMENTAÇÃO (RN02, RN03)
+// =======================================================================
+
+function updateOrderProgression() {
+    orders.forEach(order => {
+        if (order.status === STATUS.FINALIZADO || order.status === STATUS.CANCELADO) return;
 
         if (order.status === STATUS.NAO_INICIADO && Math.random() < 0.2) {
-            
-            // RN02: REMOVE A BASE DO ESTOQUE AQUI, ao entrar em produção.
             const estoqueIndex = estoqueData.indexOf(order.base);
-            
-            // O pedido só avança se a base estiver disponível no estoque (posição com a cor)
             if (estoqueIndex !== -1) { 
-                
-                // 1. Transition status: Estoque -> Processo (Aguardando Módulo)
                 order.status = STATUS.AGUARDANDO_MODULO;
                 order.local = 'Processo';
-                
-                // 2. Remove base do Stock (O CONSUMO OCORRE AQUI)
-                estoqueData[estoqueIndex] = null; // A posição fica nula/vazia, DIMINUINDO A CONTAGEM
+                estoqueData[estoqueIndex] = null; 
             }
-            // Se a base não estiver mais no estoque (estoqueIndex == -1), o pedido fica parado em NAO_INICIADO.
-            
         } else if (order.status === STATUS.AGUARDANDO_MODULO && Math.random() < 0.2) {
-            // Transition status: Aguardando Módulo -> Em Processo (Ainda em Processo)
             order.status = STATUS.EM_PROCESSO;
-            order.local = 'Processo';
-
         } else if (order.status === STATUS.EM_PROCESSO && order.local === 'Processo' && Math.random() < 0.2) {
-            // Transição de Processo -> Montagem
             order.local = 'Montagem'; 
-
         } else if (order.status === STATUS.EM_PROCESSO && order.local === 'Montagem' && Math.random() < 0.1) {
-            // Ação de Finalização do Pedido: Montagem -> Expedição
             order.status = STATUS.FINALIZADO;
             order.local = 'Expedição';
         }
     });
 
-    // Simula a alocação de pedidos finalizados na Expedição (RN03)
-    const expedicaoOrdersToAllocate = orders.filter(o => 
-        o.local === 'Expedição' && 
-        o.status === STATUS.FINALIZADO && 
-        typeof o.posicaoExpedicao === 'undefined'
-    );
-    
+    // Alocação na Expedição
+    const expedicaoOrdersToAllocate = orders.filter(o => o.local === 'Expedição' && o.status === STATUS.FINALIZADO && typeof o.posicaoExpedicao === 'undefined');
     expedicaoOrdersToAllocate.forEach(order => {
         const occupiedPositions = orders.filter(o => o.local === 'Expedição' && o.status === STATUS.FINALIZADO).map(o => o.posicaoExpedicao);
-        
         for (let i = 1; i <= 12; i++) { 
             if (!occupiedPositions.includes(i)) {
                 order.posicaoExpedicao = i;
@@ -197,30 +157,30 @@ function updateOrderProgression() {
     });
 }
 
+// =======================================================================
+// INTEGRAÇÃO COM NODE-RED (DADOS REAIS)
+// =======================================================================
 
-// Função de busca que integra API real (Apenas para Dados Ambientais)
 function buscandoDadosBancada() {
-    fetch('http://10.77.241.122:1880/smartsense/estoque')
+    fetch('http://localhost:1880/smartsense/estoque')
     .then(res => res.json())
     .then(data => {
-        // data deve vir no formato: { m1: { humi: 50, ai00: 176, ... }, m2: { ... } }
-        
-        // Exemplo de atualização para o Módulo 1
-        if (data.m1) {
-            document.getElementById('m1-humi').textContent = data.m1.humi;
-            document.getElementById('m1-ai00').textContent = data.m1.ai00;
-            document.getElementById('m1-vrms').textContent = data.m1.vrms;
-            document.getElementById('m1-irms').textContent = data.m1.irms;
-            document.getElementById('m1-appp').textContent = data.m1.appp;
-            document.getElementById('m1-actp').textContent = data.m1.actp;
+        // Atualiza os módulos m1 a m4
+        for (let i = 1; i <= 4; i++) {
+            const mod = data[`m${i}`];
+            if (mod) {
+                document.getElementById(`m${i}-humi`).textContent = mod.humi || '--';
+                document.getElementById(`m${i}-ai00`).textContent = mod.ai00 || '--';
+                document.getElementById(`m${i}-vrms`).textContent = mod.vrms || '--';
+                document.getElementById(`m${i}-irms`).textContent = mod.irms || '--';
+                document.getElementById(`m${i}-appp`).textContent = mod.appp || '--';
+                document.getElementById(`m${i}-actp`).textContent = mod.actp || '--';
+            }
         }
-
-        // Mantém a lógica de temperatura e umidade global que você já tinha
         if (data.temperatura) {
             ambientalData.temperatura = data.temperatura;
             ambientalData.umidade = data.umidade;
         }
-
         updateOrderProgression();
         saveBancadasData();
         atualizarDadosBancada();
@@ -228,144 +188,84 @@ function buscandoDadosBancada() {
     .catch(err => console.error("Erro ao buscar dados:", err));
 }
 
-function polling(segundos){
+function polling(segundos) {
     if (pollingInterval) clearTimeout(pollingInterval); 
-    
     pollingInterval = setTimeout(() => {
-        console.log('Buscando dados da bancada em tempo real...')
-        buscandoDadosBancada()
-        polling(segundos) 
-    }, segundos * 1000)
+        buscandoDadosBancada();
+        polling(segundos); 
+    }, segundos * 1000);
 }
 
+// =======================================================================
+// FUNÇÕES DE RENDERIZAÇÃO (DESENHO DA INTERFACE)
+// =======================================================================
 
-async function atualizarDadosBancada() {
-    
-    const expedicaoOrders = orders.filter(o => 
-        o.status === STATUS.FINALIZADO && 
-        o.local === 'Expedição' 
-    );
-    
-    const pedidosProcesso = orders.filter(o => 
-        o.local === 'Processo' && 
-        o.status !== STATUS.FINALIZADO && 
-        o.status !== STATUS.CANCELADO
-    ).length;
-
-    const pedidosMontagem = orders.filter(o => 
-        o.local === 'Montagem' && 
-        o.status !== STATUS.FINALIZADO && 
-        o.status !== STATUS.CANCELADO
-    ).length;
-    
+function atualizarDadosBancada() {
+    const expedicaoOrders = orders.filter(o => o.status === STATUS.FINALIZADO && o.local === 'Expedição');
+    const pedidosProcesso = orders.filter(o => o.local === 'Processo' && o.status !== STATUS.FINALIZADO && o.status !== STATUS.CANCELADO).length;
+    const pedidosMontagem = orders.filter(o => o.local === 'Montagem' && o.status !== STATUS.FINALIZADO && o.status !== STATUS.CANCELADO).length;
     
     renderBenches(estoqueData, expedicaoOrders); 
     renderProcessModules(pedidosProcesso, pedidosMontagem);
     renderEnvironmentalData(ambientalData); 
-    
     renderActiveOrders(); 
 }
 
-// =======================================================================
-// FUNÇÕES DE RENDERIZAÇÃO E RASTREAMENTO (RF03, RF04, RF05) (MANTIDAS)
-// =======================================================================
-
 function renderBenches(estoque, expedicao) {
-    // RN02: Renderiza Estoque (28 posições)
     const estoqueContainer = document.getElementById('estoque-posicoes');
-    estoqueContainer.innerHTML = '';
-    estoque.forEach((cor, index) => {
-        const statusClass = cor ? cor : 'Vazio';
-        const title = cor ? `Base ${cor} (Posição ${index + 1})` : `Posição ${index + 1}: Vazia`;
-        estoqueContainer.innerHTML += `<div class="posicao-base ${statusClass}" title="${title}">${cor ? cor[0] : ''}</div>`;
-    });
-    
-    // Contagem de estoque atualizada (28 - bases nulas)
-    document.getElementById('estoque-count').textContent = estoque.filter(c => c !== null).length + '/28';
+    if(estoqueContainer) {
+        estoqueContainer.innerHTML = '';
+        estoque.forEach((cor, index) => {
+            const statusClass = cor ? cor : 'Vazio';
+            estoqueContainer.innerHTML += `<div class="posicao-base ${statusClass}" title="${cor || 'Vazia'}">${cor ? cor : ''}</div>`;
+        });
+        document.getElementById('estoque-count').textContent = estoque.filter(c => c !== null).length + '/28';
+    }
 
-    // RN03: Renderiza Expedição (12 posições)
     const expedicaoContainer = document.getElementById('expedicao-posicoes');
-    expedicaoContainer.innerHTML = '';
-    
-    const expedicaoMap = new Array(12).fill(null);
-    expedicao.forEach(order => {
-        if (order.posicaoExpedicao) {
-             expedicaoMap[order.posicaoExpedicao - 1] = order; 
-        }
-    });
+    if(expedicaoContainer) {
+        expedicaoContainer.innerHTML = '';
+        const expedicaoMap = new Array(12).fill(null);
+        expedicao.forEach(order => { if (order.posicaoExpedicao) expedicaoMap[order.posicaoExpedicao - 1] = order; });
 
-    expedicaoMap.forEach((order, index) => {
-        if (order) {
-            const baseClass = order.base; 
-            const title = `Pedido ${order.id} | Base ${order.base} (Posição ${index + 1})`;
-            const idNumber = order.id.slice(1); 
-
-            expedicaoContainer.innerHTML += `<div class="posicao-base Pronto ${baseClass}" title="${title}">${idNumber}</div>`;
-        } else {
-            const title = `Posição ${index + 1}: Vazia`;
-            expedicaoContainer.innerHTML += `<div class="posicao-base Vazio" title="${title}"></div>`;
-        }
-    });
-    document.getElementById('expedicao-count').textContent = expedicao.length + '/12';
+        expedicaoMap.forEach((order, index) => {
+            if (order) {
+                expedicaoContainer.innerHTML += `<div class="posicao-base Pronto ${order.base}" title="Pedido ${order.id}">${order.id.slice(1)}</div>`;
+            } else {
+                expedicaoContainer.innerHTML += `<div class="posicao-base Vazio"></div>`;
+            }
+        });
+        document.getElementById('expedicao-count').textContent = expedicao.length + '/12';
+    }
 }
 
 function renderProcessModules(procCount, montCount) {
-    // RN01: Módulos Processo
-    document.getElementById('processo-status').textContent = procCount > 0 ? 'Em Andamento' : 'Ocioso';
-    document.getElementById('processo-modulos').textContent = procCount;
-
-    // RN01: Módulos Montagem
-    document.getElementById('montagem-status').textContent = montCount > 0 ? 'Em Andamento' : 'Ocioso';
-    document.getElementById('montagem-modulos').textContent = montCount;
+    if(document.getElementById('processo-status')) {
+        document.getElementById('processo-status').textContent = procCount > 0 ? 'Em Andamento' : 'Ocioso';
+        document.getElementById('processo-modulos').textContent = procCount;
+        document.getElementById('montagem-status').textContent = montCount > 0 ? 'Em Andamento' : 'Ocioso';
+        document.getElementById('montagem-modulos').textContent = montCount;
+    }
 }
 
 function renderEnvironmentalData(data) {
-    // 1. Atualiza os dados globais (se ainda existirem no seu rodapé)
-    if(document.getElementById('ambiental-temp')) 
-        document.getElementById('ambiental-temp').textContent = data.temperatura || '--';
-    if(document.getElementById('ambiental-umid')) 
-        document.getElementById('ambiental-umid').textContent = data.umidade || '--';
-
-    // 2. Loop para atualizar os 4 módulos (m1, m2, m3, m4)
-    for (let i = 1; i <= 4; i++) {
-        const mod = data[`m${i}`]; // Busca m1, m2... dentro do JSON
-        if (mod) {
-            document.getElementById(`m${i}-humi`).textContent = mod.humi;
-            document.getElementById(`m${i}-ai00`).textContent = mod.ai00;
-            document.getElementById(`m${i}-vrms`).textContent = mod.vrms;
-            document.getElementById(`m${i}-irms`).textContent = mod.irms;
-            document.getElementById(`m${i}-appp`).textContent = mod.appp;
-            document.getElementById(`m${i}-actp`).textContent = mod.actp;
-        }
-    }
+    if(document.getElementById('ambiental-temp')) document.getElementById('ambiental-temp').textContent = data.temperatura || '--';
+    if(document.getElementById('ambiental-umid')) document.getElementById('ambiental-umid').textContent = data.umidade || '--';
 }
 
 function buscarPedido(pedidoId) {
     const order = orders.find(o => o.id.toUpperCase() === pedidoId.toUpperCase());
     const resultadoDiv = document.getElementById('rastreio-resultado');
+    if(!resultadoDiv) return;
     
     resultadoDiv.style.display = 'block';
-
     if (order) {
-        const statusKey = Object.keys(STATUS).find(key => STATUS[key] === order.status);
-        const statusClass = statusKey ? `status-${statusKey.toLowerCase().replace(/_/g, '-')}` : '';
-        
         const isCancellable = order.status !== STATUS.FINALIZADO && order.status !== STATUS.CANCELADO;
-        
-        let acoesHtml = '';
-        if (isCancellable) {
-            acoesHtml = `<button class="action-btn delete-btn" onclick="handleCancelOrder('${order.id}')">❌ Cancelar Pedido</button>`;
-        } else if (order.status === STATUS.CANCELADO) {
-             acoesHtml = `<span style="color: red; font-weight: bold;">Este pedido foi CANCELADO.</span>`;
-        }
-
-
         resultadoDiv.innerHTML = `
             <h4>Pedido: ${order.id}</h4>
-            <p>Local Atual: <strong>${order.local}</strong></p>
-            <p>Status: <strong class="${statusClass}">${order.status}</strong></p>
-            <p>Base: ${order.base} | Paredes: ${order.paredes.join(', ')}</p>
-            <div style="margin-top: 10px;">${acoesHtml}</div>
+            <p>Local: <strong>${order.local}</strong> | Status: <strong>${order.status}</strong></p>
+            <p>Base: ${order.base}</p>
+            ${isCancellable ? `<button class="action-btn delete-btn" onclick="handleCancelOrder('${order.id}')">❌ Cancelar</button>` : ''}
         `;
     } else {
         resultadoDiv.innerHTML = `<h4>Pedido ${pedidoId} não encontrado.</h4>`;
@@ -374,26 +274,19 @@ function buscarPedido(pedidoId) {
 
 function renderActiveOrders() {
     const listaUl = document.getElementById('lista-pedidos-ul');
+    if(!listaUl) return;
     listaUl.innerHTML = '';
-    
     const activeOrders = orders.filter(o => o.status !== STATUS.FINALIZADO && o.status !== STATUS.CANCELADO);
-
     if (activeOrders.length === 0) {
-        listaUl.innerHTML = '<li>Nenhum pedido em produção ou aguardando início.</li>';
+        listaUl.innerHTML = '<li>Nenhum pedido em produção.</li>';
         return;
     }
-
     activeOrders.forEach(order => {
-        const statusKey = Object.keys(STATUS).find(key => STATUS[key] === order.status);
-        const statusClass = statusKey ? `status-${statusKey.toLowerCase().replace(/_/g, '-')}` : '';
-        
         const listItem = document.createElement('li');
-        listItem.innerHTML = `
-            [${order.id}] Local: ${order.local} | Status: <strong class="${statusClass}">${order.status}</strong> 
-            (<a href="#" onclick="buscarPedido('${order.id}'); return false;">Rastrear</a>)
-        `;
+        listItem.innerHTML = `[${order.id}] ${order.status} (<a href="#" onclick="buscarPedido('${order.id}'); return false;">Rastrear</a>)`;
         listaUl.appendChild(listItem);
     });
 }
 
+// Inicia tudo ao carregar
 document.addEventListener('DOMContentLoaded', initializeBancadasPage);

@@ -40,35 +40,50 @@ let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
 
 async function handleLogin(email, senha) {
     const loginErro = document.getElementById('login-erro');
-    
     try {
-        // Busca a lista de usuários REAL do seu Node-RED
-        const res = await fetch('http://10.77.241.122:1880/smartsense/listausuario');
+        const res = await fetch('http://localhost:1880/autenticacao/autenticar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, senha: senha })
+        });
         
-        if (!res.ok) throw new Error("Erro ao acessar o servidor");
-        
-        const listaUsuarios = await res.json();
+        if (res.ok) {
+            const data = await res.json(); 
+            
+            // Verificamos se recebemos dados válidos
+            if (data) {
+                // Se o Node-RED enviar uma lista, pegamos o primeiro. Se enviar objeto, usamos direto.
+                const user = Array.isArray(data) ? data : data; 
+                
+                if (!user) {
+                    loginErro.textContent = 'Usuário não encontrado.';
+                    return;
+                }
 
-        // 1. Procura o usuário pelo e-mail
-        const user = listaUsuarios.find(u => u.email === email);
+                // Criamos o objeto padronizado
+                const userParaSalvar = {
+                    id: user.id || user.id_usuarios,
+                    nome: user.nome,
+                    tipo: user.tipo || user.tipo_usuario, 
+                    email: email
+                };
 
-        if (user) {
-            // 2. Verifica se a senha confere
-            if (user.senha === senha) {
-                // Sucesso: Salva apenas o usuário logado no navegador
-                localStorage.setItem('currentUser', JSON.stringify(user)); 
+                // PERSISTÊNCIA: Aqui é onde resolvemos o seu problema atual
+                localStorage.setItem('currentUser', JSON.stringify(userParaSalvar));
+                localStorage.setItem('usuarioTipo', userParaSalvar.tipo); // Necessário para Gerência
+                localStorage.setItem('usuarioId', userParaSalvar.id);     // Necessário para Pedidos
+                localStorage.setItem('usuarioNome', userParaSalvar.nome);
+
                 window.location.href = 'bancadas.html'; 
             } else {
-                loginErro.textContent = 'Senha incorreta para este usuário.';
-                console.warn("Senha digitada não confere com o Node-RED.");
+                loginErro.textContent = 'Usuário não encontrado.';
             }
         } else {
-            loginErro.textContent = 'E-mail não encontrado no sistema.';
-            console.error("Usuário não existe na memória global do Node-RED.");
+            loginErro.textContent = 'E-mail ou senha incorretos.';
         }
     } catch (err) {
-        console.error("Falha na conexão (Failed to fetch):", err);
-        alert("Não foi possível conectar ao Node-RED. Verifique se o servidor está rodando.");
+        console.error("Falha na conexão:", err);
+        alert("Não foi possível conectar ao servidor.");
     }
 }
 
@@ -99,3 +114,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+function saveBancadasData() {
+    localStorage.setItem('orders', JSON.stringify(orders));
+    localStorage.setItem('estoqueData', JSON.stringify(estoqueData));
+    localStorage.setItem('ambientalData', JSON.stringify(ambientalData));
+}
