@@ -1,10 +1,5 @@
-
-// =======================================================================
-// LÓGICA DE INICIALIZAÇÃO DA PÁGINA DE GERÊNCIA DE USUÁRIOS (Professor)
-// =======================================================================
-
 function initializeGerenciaUsuarioPage() {
-    // RN05: Garante que só o Professor acesse
+    
     if (!currentUser || (currentUser.tipo !== 'Professor' && currentUser.tipo_usuario !== 'Professor')) {
         alert('Acesso negado. Apenas professores podem acessar esta página.');
         window.location.href = 'bancadas.html'; 
@@ -14,14 +9,14 @@ function initializeGerenciaUsuarioPage() {
     document.getElementById('display-user-name').textContent = `${currentUser.nome} ${currentUser.sobrenome}`;
     document.getElementById('display-user-type').textContent = currentUser.tipo;
 
-    // Conecta o formulário de CRUD de usuário
+    
     document.getElementById('form-user-crud').addEventListener('submit', handleUserFormSubmit);
     
-    // Carrega a lista de usuários
+    
     renderUsersTable();
 }
 
-// Crie esta variável no topo do arquivo para armazenar o que vier do servidor
+
 let LISTA_USUARIOS_SERVER = [];
 
 async function renderUsersTable() {
@@ -30,11 +25,11 @@ async function renderUsersTable() {
     tbody.innerHTML = ''; 
 
     try {
-        // Substitua pelo seu IP ou 'localhost' para evitar o erro de TIMED_OUT
+        
         const res = await fetch('http://localhost:1880/smartsense/listausuario');
         const users = await res.json();
         
-        // Guarda na variável global para as funções de Editar/Excluir
+        
         LISTA_USUARIOS_SERVER = users;
 
         console.log(users)
@@ -86,7 +81,7 @@ function toggleUserForm(mode, userId = null) {
 }
 
 function editUser(userId) {
-    // Procura na lista vinda do servidor (LISTA_USUARIOS_SERVER)
+   
     const user = LISTA_USUARIOS_SERVER.find(u => u.id === userId);
     if (user) {
         document.getElementById('user-id').value = user.id;
@@ -105,7 +100,7 @@ function deleteUser(userId) {
         })
         .then(() => {
             alert('Usuário removido com sucesso!');
-            renderUsersTable(); // Recarrega a lista do servidor
+            renderUsersTable(); 
         })
         .catch(err => console.error("Erro ao deletar:", err));
     }
@@ -114,7 +109,7 @@ function deleteUser(userId) {
 async function handleUserFormSubmit(e) {
     e.preventDefault();
     
-    // Coleta os dados do formulário
+    
     const userId = document.getElementById('user-id').value;
     const userData = {
         nome: document.getElementById('nome').value,
@@ -126,12 +121,12 @@ async function handleUserFormSubmit(e) {
     };
 
     try {
-        let url = 'http://localhost:1880:1880/smartsense/usuario/criar';
+        let url = 'http://localhost:1880/smartsense/usuario/criar';
         let method = 'POST';
 
-        // Se existir um ID, muda para a rota de ALTERAR (PUT)
+        
         if (userId) {
-            url = `http://localhost:1880:1880/smartsense/usuario/alterar/${userId}`;
+            url = `http://localhost:1880/smartsense/usuario/alterar/${userId}`;
             method = 'PUT';
         }
 
@@ -143,8 +138,8 @@ async function handleUserFormSubmit(e) {
 
         if (response.ok) {
             alert(userId ? 'Usuário atualizado com sucesso!' : 'Usuário criado com sucesso!');
-            toggleUserForm('hide'); // Esconde o formulário
-            renderUsersTable();     // Recarrega a tabela com os dados novos do servidor
+            toggleUserForm('hide'); 
+            renderUsersTable();     
         } else {
             alert('Erro ao salvar usuário no servidor.');
         }

@@ -1,33 +1,28 @@
-// =======================================================================
-// CONFIGURAÇÕES E ESTADOS GLOBAIS
-// =======================================================================
-let pollingInterval; // Declarada apenas UMA VEZ para evitar erro de "already declared"
 
-// =======================================================================
-// LÓGICA DE INICIALIZAÇÃO DA PÁGINA (Dashboard)
-// =======================================================================
+let pollingInterval; 
 
 function initializeBancadasPage() {
-    // 1. Verifica se existe um usuário logado (dados vêm do index.js)
+    currentUser = JSON.parse(localStorage.getItem('currentUser'));
     if (!currentUser) {
+        console.error("Nenhum usuário logado encontrado no localStorage.");
         window.location.href = 'index.html'; 
         return;
     }
 
     console.log("Iniciando monitoramento das bancadas...");
-    
-    // 2. Exibe os dados do usuário logado no topo da página
+    console.log(currentUser)
+  
     const userNameElement = document.getElementById('display-user-name');
     const userTypeElement = document.getElementById('display-user-type');
     
     if (userNameElement) userNameElement.textContent = currentUser.nome;
     if (userTypeElement) userTypeElement.textContent = currentUser.tipo;
 
-    // 3. Lógica de Controle de Acesso (Visão do Professor)
+
     const navGerencia = document.getElementById('nav-gerencia');
     const navReset = document.getElementById('nav-reset-data'); 
     
-    if (currentUser.tipo === 'Professor') {
+    if (currentUser.tipo && currentUser.tipo.toLowerCase() === 'professor') {
         if (navGerencia) navGerencia.style.display = 'inline-block';
         if (navReset) navReset.style.display = 'inline-block'; 
     } else {
@@ -35,7 +30,7 @@ function initializeBancadasPage() {
         if (navReset) navReset.style.display = 'none'; 
     }
 
-    // 4. Configuração dos Eventos de Formulário (Criação e Rastreio)
+
     const formCriaPedido = document.getElementById('form-cria-pedido');
     if (formCriaPedido) {
         formCriaPedido.addEventListener('submit', function(e) {
@@ -53,15 +48,12 @@ function initializeBancadasPage() {
         });
     }
     
-    // 5. Inicia a busca de dados inicial e o loop de atualização
+
     buscandoDadosBancada(); 
-    polling(5); // Atualiza a cada 5 segundos
+    polling(5); 
     atualizarDadosBancada(); 
 }
 
-// =======================================================================
-// LÓGICA DE PEDIDOS (Criação e Cancelamento)
-// =======================================================================
 
 function handleCreateOrder() {
     const corBase = document.getElementById('cor-base').value;
@@ -119,10 +111,6 @@ function handleCancelOrder(orderId) {
     }
 }
 
-// =======================================================================
-// LÓGICA DE SIMULAÇÃO E MOVIMENTAÇÃO (RN02, RN03)
-// =======================================================================
-
 function updateOrderProgression() {
     orders.forEach(order => {
         if (order.status === STATUS.FINALIZADO || order.status === STATUS.CANCELADO) return;
@@ -144,7 +132,7 @@ function updateOrderProgression() {
         }
     });
 
-    // Alocação na Expedição
+
     const expedicaoOrdersToAllocate = orders.filter(o => o.local === 'Expedição' && o.status === STATUS.FINALIZADO && typeof o.posicaoExpedicao === 'undefined');
     expedicaoOrdersToAllocate.forEach(order => {
         const occupiedPositions = orders.filter(o => o.local === 'Expedição' && o.status === STATUS.FINALIZADO).map(o => o.posicaoExpedicao);
@@ -157,15 +145,12 @@ function updateOrderProgression() {
     });
 }
 
-// =======================================================================
-// INTEGRAÇÃO COM NODE-RED (DADOS REAIS)
-// =======================================================================
 
 function buscandoDadosBancada() {
     fetch('http://localhost:1880/smartsense/estoque')
     .then(res => res.json())
     .then(data => {
-        // Atualiza os módulos m1 a m4
+
         for (let i = 1; i <= 4; i++) {
             const mod = data[`m${i}`];
             if (mod) {
@@ -196,9 +181,7 @@ function polling(segundos) {
     }, segundos * 1000);
 }
 
-// =======================================================================
-// FUNÇÕES DE RENDERIZAÇÃO (DESENHO DA INTERFACE)
-// =======================================================================
+
 
 function atualizarDadosBancada() {
     const expedicaoOrders = orders.filter(o => o.status === STATUS.FINALIZADO && o.local === 'Expedição');
@@ -288,5 +271,4 @@ function renderActiveOrders() {
     });
 }
 
-// Inicia tudo ao carregar
 document.addEventListener('DOMContentLoaded', initializeBancadasPage);

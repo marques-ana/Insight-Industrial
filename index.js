@@ -1,8 +1,3 @@
-// =======================================================================
-// CONFIGURAÇÕES E ESTADOS INICIAIS
-// =======================================================================
-
-// RN06: Status de pedido para a plataforma
 const STATUS = {
     NAO_INICIADO: 'Não iniciado',
     AGUARDANDO_MODULO: 'Aguardando módulo',
@@ -11,7 +6,7 @@ const STATUS = {
     CANCELADO: 'Cancelado',
 };
 
-// Dados Padrão de Simulação (Bancada)
+
 const defaultOrders = [
     { id: 'P1001', base: 'Preto', paredes: ['Preto', 'Azul', 'Vermelho'], status: STATUS.FINALIZADO, local: 'Expedição', posicaoExpedicao: 1 },
     { id: 'P1002', base: 'Azul', paredes: ['Azul', 'Azul', 'Azul'], status: STATUS.FINALIZADO, local: 'Expedição', posicaoExpedicao: 2 },
@@ -26,17 +21,15 @@ const fullEstoque = [
 
 const defaultAmbiental = { temperatura: 25.5, umidade: 60.2 };
 
-// Inicialização com Persistência Local (apenas para dados da bancada)
+
 let orders = JSON.parse(localStorage.getItem('orders')) || [...defaultOrders];
 let estoqueData = JSON.parse(localStorage.getItem('estoqueData')) || [...fullEstoque];
 let ambientalData = JSON.parse(localStorage.getItem('ambientalData')) || {...defaultAmbiental};
 
-// Estado do Usuário Logado
+
 let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
 
-// =======================================================================
-// LÓGICA DE AUTENTICAÇÃO (CONECTADA AO NODE-RED)
-// =======================================================================
+
 
 async function handleLogin(email, senha) {
     const loginErro = document.getElementById('login-erro');
@@ -46,37 +39,29 @@ async function handleLogin(email, senha) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: email, senha: senha })
         });
-        
+
         if (res.ok) {
-            const data = await res.json(); 
-            
-            // Verificamos se recebemos dados válidos
+            const data = await res.json();
+            console.log(data)
             if (data) {
-                // Se o Node-RED enviar uma lista, pegamos o primeiro. Se enviar objeto, usamos direto.
-                const user = Array.isArray(data) ? data : data; 
                 
-                if (!user) {
-                    loginErro.textContent = 'Usuário não encontrado.';
-                    return;
-                }
 
-                // Criamos o objeto padronizado
                 const userParaSalvar = {
-                    id: user.id || user.id_usuarios,
-                    nome: user.nome,
-                    tipo: user.tipo || user.tipo_usuario, 
-                    email: email
-                };
+                    id: data[0].id,
+                    
+                    nome: data[0].nome, 
+                    sobrenome: "",
+                    
+                    tipo: data[0].tipo, 
+                    email: data[0].email,
+                    dataNascimento: data[0].data_nascimento || data.dataNascimento || ""
+            };
 
-                // PERSISTÊNCIA: Aqui é onde resolvemos o seu problema atual
-                localStorage.setItem('currentUser', JSON.stringify(userParaSalvar));
-                localStorage.setItem('usuarioTipo', userParaSalvar.tipo); // Necessário para Gerência
-                localStorage.setItem('usuarioId', userParaSalvar.id);     // Necessário para Pedidos
-                localStorage.setItem('usuarioNome', userParaSalvar.nome);
-
-                window.location.href = 'bancadas.html'; 
+            localStorage.setItem('currentUser', JSON.stringify(userParaSalvar));
+            console.log(userParaSalvar)
+            window.location.href = 'bancadas.html';
             } else {
-                loginErro.textContent = 'Usuário não encontrado.';
+                loginErro.textContent = 'Dados de usuário inválidos.';
             }
         } else {
             loginErro.textContent = 'E-mail ou senha incorretos.';
@@ -85,26 +70,20 @@ async function handleLogin(email, senha) {
         console.error("Falha na conexão:", err);
         alert("Não foi possível conectar ao servidor.");
     }
-}
+} 
 
 function handleLogout() {
     localStorage.removeItem('currentUser');
-    window.location.href = 'index.html'; 
+    window.location.href = 'index.html';
 }
 
-// =======================================================================
-// INICIALIZAÇÃO DA PÁGINA
-// =======================================================================
+
 
 document.addEventListener('DOMContentLoaded', function() {
     const loginForm = document.getElementById('login-form');
     
     if (loginForm) {
-        // Se já estiver logado, pula a tela de login
-        if (currentUser) {
-            window.location.href = 'bancadas.html';
-            return;
-        }
+        
         
         loginForm.addEventListener('submit', function(e) {
             e.preventDefault();

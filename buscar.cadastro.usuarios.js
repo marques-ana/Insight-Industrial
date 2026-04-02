@@ -1,11 +1,11 @@
 window.onload = () => {
-    // Só chama o logar se houver um formulário de login na página atual
-    const formLogin = document.getElementById("form-login"); // Certifique-se que o ID existe no HTML
+
+    const formLogin = document.getElementById("form-login"); 
     if (formLogin) {
         formLogin.onsubmit = logar;
     }
     
-    // Se estiver na página de gerência, busca a lista
+    
     if (document.getElementById('users-table-body')) {
         renderUsersTable(); 
     }
@@ -19,8 +19,8 @@ function logar(e) {
 
     fetch("http://10.77.241.122:1880/autenticacao/autenticar", {
         method: "POST",
-        headers: { "Content-Type": "application/json" }, // Obrigatório para o Node-RED entender o JSON
-        body: JSON.stringify({ email, senha }) // Enviando email e senha corretamente
+        headers: { "Content-Type": "application/json" }, 
+        body: JSON.stringify({ email, senha }) 
     })
     .then(resposta => {
         if (resposta.ok) return resposta.json();
